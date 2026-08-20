@@ -10,6 +10,7 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "${PORT:-22313}:22313"
+      - "25565-25575:25565-25575"
     environment:
       - PORT=22313
       - TZ=${TZ:-Europe/Vienna}

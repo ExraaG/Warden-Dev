@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import pidusage from 'pidusage';
 import { ServerStatus, ServerStats } from '@warden/shared';
 
@@ -309,7 +310,8 @@ export class ServerProcess extends EventEmitter {
       }
       try {
         const stats = await pidusage(this.process.pid);
-        this.currentStats.cpuPercent = Math.round(stats.cpu * 10) / 10;
+        const cpuCores = os.cpus()?.length || 1;
+        this.currentStats.cpuPercent = Math.min(100, Math.round((stats.cpu / cpuCores) * 10) / 10);
         this.currentStats.memoryBytes = stats.memory;
         this.currentStats.uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000);
         this.currentStats.onlinePlayers = this.onlinePlayersSet.size;
