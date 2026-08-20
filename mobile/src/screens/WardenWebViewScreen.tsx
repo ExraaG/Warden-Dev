@@ -7,12 +7,9 @@ import {
   BackHandler,
   SafeAreaView,
   StatusBar,
-  Image,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import Svg, { Rect, Circle } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
-import { WardenSpinner } from '../components/ui/WardenSpinner';
 
 const INJECTED_ZOOM_LOCK_JS = `
 (function() {
@@ -37,20 +34,10 @@ const INJECTED_ZOOM_LOCK_JS = `
 })();
 `;
 
-const IconServerSwitch = () => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <Rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-    <Rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-    <Circle cx="6" cy="6" r="1" fill="#1bd96a" />
-    <Circle cx="6" cy="18" r="1" fill="#1bd96a" />
-  </Svg>
-);
-
 export const WardenWebViewScreen: React.FC = () => {
   const { serverUrl, disconnectServer } = useApp();
   const webViewRef = useRef<WebView>(null);
   const [canGoBack, setCanGoBack] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorDesc, setErrorDesc] = useState<string>('');
 
@@ -69,13 +56,12 @@ export const WardenWebViewScreen: React.FC = () => {
 
   const handleReload = () => {
     setHasError(false);
-    setIsLoading(true);
     webViewRef.current?.reload();
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d0e11" />
+      <StatusBar barStyle="light-content" backgroundColor="#0d0e11" translucent={false} />
 
       {/* Embedded Fullscreen Responsive WebView */}
       {!hasError && (
@@ -95,15 +81,12 @@ export const WardenWebViewScreen: React.FC = () => {
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
           allowsBackForwardNavigationGestures={true}
-          startInLoadingState={true}
+          mixedContentMode="always"
           onNavigationStateChange={(navState) => {
             setCanGoBack(navState.canGoBack);
           }}
-          onLoadStart={() => setIsLoading(true)}
-          onLoadEnd={() => setIsLoading(false)}
           onError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
-            setIsLoading(false);
             setHasError(true);
             setErrorDesc(nativeEvent.description || 'Could not connect to server.');
           }}
@@ -117,19 +100,7 @@ export const WardenWebViewScreen: React.FC = () => {
         />
       )}
 
-      {/* Exact Web Startup Loading Screen (Identical to layout.tsx) */}
-      {isLoading && !hasError && (
-        <View style={styles.loadingOverlay} pointerEvents="none">
-          <Image
-            source={require('../assets/warden_logo.png')}
-            style={styles.loadingLogo}
-            resizeMode="contain"
-          />
-          <WardenSpinner size={20} color="#1bd96a" />
-        </View>
-      )}
-
-      {/* Error Fallback Screen */}
+      {/* Error Fallback Screen if Connection Fails */}
       {hasError && (
         <View style={styles.errorContainer}>
           <View style={styles.errorCard}>
@@ -151,20 +122,6 @@ export const WardenWebViewScreen: React.FC = () => {
           </View>
         </View>
       )}
-
-      {/* Discreet Bottom Server Switcher Pill */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.serverPill}
-          onPress={disconnectServer}
-          activeOpacity={0.7}
-        >
-          <IconServerSwitch />
-          <Text style={styles.serverPillText} numberOfLines={1}>
-            {serverUrl.replace(/^https?:\/\//, '')}
-          </Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -177,18 +134,6 @@ const styles = StyleSheet.create({
   webView: {
     flex: 1,
     backgroundColor: '#0d0e11',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0d0e11',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-    zIndex: 10,
-  },
-  loadingLogo: {
-    width: 180,
-    height: 32,
   },
   errorContainer: {
     flex: 1,
@@ -263,33 +208,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#cbd5e1',
     letterSpacing: 0.5,
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 6,
-    right: 12,
-    zIndex: 20,
-  },
-  serverPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(19, 22, 28, 0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(35, 39, 51, 0.9)',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  serverPillText: {
-    fontFamily: 'Minecraft',
-    fontSize: 9,
-    color: '#94a3b8',
-    maxWidth: 160,
   },
 });
