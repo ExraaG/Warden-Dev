@@ -6,10 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: warden
     restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "${PORT:-22313}:22313"
+    network_mode: host
     environment:
       - PORT=22313
       - TZ=${TZ:-Europe/Vienna}
