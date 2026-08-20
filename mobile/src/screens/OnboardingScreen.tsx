@@ -56,18 +56,13 @@ export const OnboardingScreen: React.FC = () => {
     }
   };
 
-  const handleApplyPreset = (presetUrl: string) => {
-    setUrl(presetUrl);
-    setErrorMsg(null);
-  };
-
   return (
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {/* Official Warden Logo (Exact placement from AuthView) */}
+        {/* Official Warden Logo (Exact Web Branding) */}
         <View style={styles.logoContainer}>
           <Image
             source={require('../assets/warden_logo.png')}
@@ -100,39 +95,6 @@ export const OnboardingScreen: React.FC = () => {
               autoCorrect={false}
               keyboardType="url"
             />
-          </View>
-
-          {/* Quick Presets */}
-          <View style={styles.presetsRow}>
-            <TouchableOpacity
-              style={[styles.presetBtn, url === 'http://localhost:22313' && styles.presetBtnActive]}
-              onPress={() => handleApplyPreset('http://localhost:22313')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.presetBtnText, url === 'http://localhost:22313' && styles.presetBtnTextActive]}>
-                Localhost (USB)
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.presetBtn, url === 'http://10.0.2.2:22313' && styles.presetBtnActive]}
-              onPress={() => handleApplyPreset('http://10.0.2.2:22313')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.presetBtnText, url === 'http://10.0.2.2:22313' && styles.presetBtnTextActive]}>
-                Emulator
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.presetBtn, url.includes('192.168.') && styles.presetBtnActive]}
-              onPress={() => handleApplyPreset('http://192.168.1.231:22313')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.presetBtnText, url.includes('192.168.') && styles.presetBtnTextActive]}>
-                LAN Host
-              </Text>
-            </TouchableOpacity>
           </View>
 
           {/* Primary Action Button */}
@@ -211,7 +173,7 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   formGroup: {
-    marginBottom: 14,
+    marginBottom: 20,
   },
   label: {
     fontFamily: 'Minecraft',
@@ -231,34 +193,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Minecraft',
     fontSize: 13,
     color: '#f8fafc',
-  },
-  presetsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 20,
-  },
-  presetBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 6,
-    backgroundColor: '#191c24',
-    borderWidth: 1,
-    borderColor: '#232733',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  presetBtnActive: {
-    borderColor: 'rgba(27, 217, 106, 0.5)',
-    backgroundColor: 'rgba(27, 217, 106, 0.12)',
-  },
-  presetBtnText: {
-    fontFamily: 'Minecraft',
-    fontSize: 10,
-    color: '#64748b',
-  },
-  presetBtnTextActive: {
-    color: '#1bd96a',
   },
   primaryButton: {
     flexDirection: 'row',
