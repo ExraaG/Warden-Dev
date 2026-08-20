@@ -38,7 +38,8 @@ async function bootstrap() {
 
   // Serve Next.js web application for all routes
   app.all('*', (req, res) => {
-    return nextHandler(req, res);
+    const parsedUrl = parse(req.url, true);
+    return nextHandler(req, res, parsedUrl);
   });
 
   // Start 4 AM update cron job runner
