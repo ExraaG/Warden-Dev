@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,10 @@ import {
   Platform,
   ScrollView,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
+import { WardenSpinner } from '../components/ui/WardenSpinner';
 
 const IconCheck = ({ size = 14, color = '#0d0e11' }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -29,10 +29,16 @@ const IconAlert = ({ size = 16, color = '#f87171' }: { size?: number; color?: st
 );
 
 export const OnboardingScreen: React.FC = () => {
-  const { connectServer } = useApp();
-  const [url, setUrl] = useState<string>('http://localhost:22313');
+  const { serverUrl, connectServer } = useApp();
+  const [url, setUrl] = useState<string>(serverUrl || 'http://localhost:22313');
   const [connecting, setConnecting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (serverUrl) {
+      setUrl(serverUrl);
+    }
+  }, [serverUrl]);
 
   const handleConnect = async () => {
     if (!url.trim()) {
@@ -61,7 +67,7 @@ export const OnboardingScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {/* Exact Official Warden Logo (Identical to Web AuthView) */}
+        {/* Official Warden Logo (Exact placement from AuthView) */}
         <View style={styles.logoContainer}>
           <Image
             source={require('../assets/warden_logo.png')}
@@ -70,9 +76,8 @@ export const OnboardingScreen: React.FC = () => {
           />
         </View>
 
-        {/* Exact Web Card Component Styling */}
+        {/* Card Container (Exact styling from AuthView) */}
         <View style={styles.card}>
-          {/* Error Banner (Identical to Web) */}
           {errorMsg && (
             <View style={styles.errorBox}>
               <IconAlert size={16} color="#f87171" />
@@ -80,7 +85,6 @@ export const OnboardingScreen: React.FC = () => {
             </View>
           )}
 
-          {/* Form Group */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>SERVER ENDPOINT / IP</Text>
             <TextInput
@@ -131,7 +135,7 @@ export const OnboardingScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Exact Web Primary Button (Emerald #1bd96a with Minecraft Font) */}
+          {/* Primary Action Button */}
           <TouchableOpacity
             style={[styles.primaryButton, connecting && styles.buttonDisabled]}
             onPress={handleConnect}
@@ -139,7 +143,7 @@ export const OnboardingScreen: React.FC = () => {
             activeOpacity={0.85}
           >
             {connecting ? (
-              <ActivityIndicator size="small" color="#0d0e11" />
+              <WardenSpinner size={16} color="#0d0e11" />
             ) : (
               <>
                 <IconCheck size={14} color="#0d0e11" />
@@ -235,7 +239,7 @@ const styles = StyleSheet.create({
   },
   presetBtn: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 4,
     borderRadius: 6,
     backgroundColor: '#191c24',

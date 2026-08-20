@@ -3,16 +3,16 @@ import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   BackHandler,
   SafeAreaView,
   StatusBar,
-  Alert,
+  Image,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import Svg, { Rect, Circle } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
+import { WardenSpinner } from '../components/ui/WardenSpinner';
 
 const INJECTED_ZOOM_LOCK_JS = `
 (function() {
@@ -41,8 +41,8 @@ const IconServerSwitch = () => (
   <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <Rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
     <Rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-    <Circle cx="6" cy="6" r="1" fill="#34d399" />
-    <Circle cx="6" cy="18" r="1" fill="#34d399" />
+    <Circle cx="6" cy="6" r="1" fill="#1bd96a" />
+    <Circle cx="6" cy="18" r="1" fill="#1bd96a" />
   </Svg>
 );
 
@@ -54,7 +54,6 @@ export const WardenWebViewScreen: React.FC = () => {
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorDesc, setErrorDesc] = useState<string>('');
 
-  // Handle Android hardware back button
   useEffect(() => {
     const onBackPress = () => {
       if (canGoBack && webViewRef.current) {
@@ -68,21 +67,6 @@ export const WardenWebViewScreen: React.FC = () => {
     return () => sub.remove();
   }, [canGoBack]);
 
-  const handleDisconnectPrompt = () => {
-    Alert.alert(
-      'Switch Server',
-      `Currently connected to:\n${serverUrl}\n\nDo you want to disconnect and enter a different IP?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disconnect',
-          style: 'destructive',
-          onPress: () => disconnectServer(),
-        },
-      ]
-    );
-  };
-
   const handleReload = () => {
     setHasError(false);
     setIsLoading(true);
@@ -93,7 +77,7 @@ export const WardenWebViewScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0d0e11" />
 
-      {/* Embedded Fullscreen WebView */}
+      {/* Embedded Fullscreen Responsive WebView */}
       {!hasError && (
         <WebView
           ref={webViewRef}
@@ -133,11 +117,15 @@ export const WardenWebViewScreen: React.FC = () => {
         />
       )}
 
-      {/* Loading Overlay */}
+      {/* Exact Web Startup Loading Screen (Identical to layout.tsx) */}
       {isLoading && !hasError && (
         <View style={styles.loadingOverlay} pointerEvents="none">
-          <ActivityIndicator size="large" color="#34d399" />
-          <Text style={styles.loadingText}>CONNECTING TO WARDEN...</Text>
+          <Image
+            source={require('../assets/warden_logo.png')}
+            style={styles.loadingLogo}
+            resizeMode="contain"
+          />
+          <WardenSpinner size={20} color="#1bd96a" />
         </View>
       )}
 
@@ -153,7 +141,7 @@ export const WardenWebViewScreen: React.FC = () => {
 
             <View style={styles.errorActions}>
               <TouchableOpacity style={styles.retryBtn} onPress={handleReload} activeOpacity={0.8}>
-                <Text style={styles.retryBtnText}>RETRY CONNECTION</Text>
+                <Text style={styles.retryBtnText}>RETRY</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.switchBtn} onPress={disconnectServer} activeOpacity={0.8}>
@@ -164,11 +152,11 @@ export const WardenWebViewScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Subtle Bottom Switcher Bar */}
+      {/* Discreet Bottom Server Switcher Pill */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.serverPill}
-          onPress={handleDisconnectPrompt}
+          onPress={disconnectServer}
           activeOpacity={0.7}
         >
           <IconServerSwitch />
@@ -195,15 +183,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d0e11',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 16,
     zIndex: 10,
   },
-  loadingText: {
-    fontFamily: 'monospace',
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#64748b',
-    letterSpacing: 1,
+  loadingLogo: {
+    width: 180,
+    height: 32,
   },
   errorContainer: {
     flex: 1,
@@ -216,30 +201,30 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     backgroundColor: '#13161c',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#222734',
+    borderColor: '#232733',
     padding: 24,
     alignItems: 'center',
   },
   errorTitle: {
-    fontFamily: 'monospace',
-    fontSize: 16,
-    fontWeight: '900',
+    fontFamily: 'Minecraft',
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#ef4444',
     letterSpacing: 1,
     marginBottom: 8,
   },
   errorSub: {
-    fontFamily: 'monospace',
-    fontSize: 12,
+    fontFamily: 'Minecraft',
+    fontSize: 11,
     color: '#94a3b8',
     textAlign: 'center',
     lineHeight: 16,
     marginBottom: 10,
   },
   errorDetail: {
-    fontFamily: 'monospace',
+    fontFamily: 'Minecraft',
     fontSize: 10,
     color: '#f87171',
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -255,36 +240,35 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   retryBtn: {
-    backgroundColor: '#10b981',
-    borderRadius: 8,
+    backgroundColor: '#1bd96a',
+    borderRadius: 6,
     paddingVertical: 12,
     alignItems: 'center',
   },
   retryBtnText: {
-    fontFamily: 'monospace',
+    fontFamily: 'Minecraft',
     fontSize: 12,
-    fontWeight: '900',
-    color: '#090d16',
+    fontWeight: 'bold',
+    color: '#0d0e11',
     letterSpacing: 0.5,
   },
   switchBtn: {
-    backgroundColor: '#1e293b',
-    borderRadius: 8,
+    backgroundColor: '#191c24',
+    borderRadius: 6,
     paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#232733',
   },
   switchBtnText: {
-    fontFamily: 'monospace',
+    fontFamily: 'Minecraft',
     fontSize: 11,
-    fontWeight: 'bold',
     color: '#cbd5e1',
     letterSpacing: 0.5,
   },
   bottomBar: {
     position: 'absolute',
-    bottom: 4,
+    bottom: 6,
     right: 12,
     zIndex: 20,
   },
@@ -292,9 +276,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(19, 22, 28, 0.85)',
+    backgroundColor: 'rgba(19, 22, 28, 0.9)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 39, 52, 0.9)',
+    borderColor: 'rgba(35, 39, 51, 0.9)',
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -305,9 +289,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   serverPillText: {
-    fontFamily: 'monospace',
+    fontFamily: 'Minecraft',
     fontSize: 9,
-    fontWeight: 'bold',
     color: '#94a3b8',
     maxWidth: 160,
   },

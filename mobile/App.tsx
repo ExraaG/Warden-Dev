@@ -3,6 +3,7 @@ import { View, Image, StyleSheet, StatusBar } from 'react-native';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { WardenWebViewScreen } from './src/screens/WardenWebViewScreen';
+import { WardenSpinner } from './src/components/ui/WardenSpinner';
 
 function MainApp() {
   const { isConfigured, loading, serverUrl } = useApp();
@@ -16,7 +17,7 @@ function MainApp() {
           style={styles.splashLogo}
           resizeMode="contain"
         />
-        <View style={styles.spinner} />
+        <WardenSpinner size={20} color="#1bd96a" />
       </View>
     );
   }
@@ -53,18 +54,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    gap: 16,
   },
   splashLogo: {
     width: 180,
     height: 32,
-    marginBottom: 16,
-  },
-  spinner: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#1bd96a',
-    borderTopColor: 'transparent',
   },
 });
