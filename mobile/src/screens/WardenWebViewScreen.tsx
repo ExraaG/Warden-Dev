@@ -210,7 +210,6 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontFamily: 'Minecraft',
     fontSize: 14,
-    fontWeight: 'bold',
     color: '#ef4444',
     letterSpacing: 1,
     marginBottom: 8,
@@ -248,7 +247,6 @@ const styles = StyleSheet.create({
   retryBtnText: {
     fontFamily: 'Minecraft',
     fontSize: 12,
-    fontWeight: 'bold',
     color: '#0d0e11',
     letterSpacing: 0.5,
   },

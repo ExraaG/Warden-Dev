@@ -62,7 +62,7 @@ export const OnboardingScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {/* Official Warden Logo (Exact Web Branding) */}
+        {/* Official Warden Logo */}
         <View style={styles.logoContainer}>
           <Image
             source={require('../assets/warden_logo.png')}
@@ -71,7 +71,7 @@ export const OnboardingScreen: React.FC = () => {
           />
         </View>
 
-        {/* Card Container (Exact styling from AuthView) */}
+        {/* Card Container */}
         <View style={styles.card}>
           {errorMsg && (
             <View style={styles.errorBox}>
@@ -113,12 +113,6 @@ export const OnboardingScreen: React.FC = () => {
               </>
             )}
           </TouchableOpacity>
-
-          <View style={styles.footerInfo}>
-            <Text style={styles.footerText}>
-              Opens Warden web dashboard with 2FA, live console, and servers.
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -210,19 +204,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: 'Minecraft',
     fontSize: 12,
-    fontWeight: 'bold',
     color: '#0d0e11',
     letterSpacing: 0.5,
-  },
-  footerInfo: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontFamily: 'Minecraft',
-    fontSize: 10,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 14,
   },
 });
