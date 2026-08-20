@@ -11,7 +11,7 @@ import { updateJobRunner } from './jobs/cron.js';
 const appDir = typeof __dirname !== 'undefined' ? path.resolve(__dirname, '..') : path.resolve(process.cwd(), 'server');
 
 const dev = process.env.NODE_ENV !== 'production';
-const nextApp = next({ dev, dir: appDir });
+const nextApp = next({ dev, dir: appDir, hostname: '0.0.0.0', port: config.port });
 const nextHandler = nextApp.getRequestHandler();
 
 async function bootstrap() {
