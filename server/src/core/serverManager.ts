@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { exec } from 'child_process';
 import AdmZip from 'adm-zip';
 import { ServerProcess } from './serverProcess.js';
 import { ServerInstaller } from './serverInstaller.js';
@@ -363,6 +364,16 @@ export class ServerManager {
     }
 
     await proc.start();
+
+    // Automatically ensure port is allowed in host firewall (UFW / iptables)
+    try {
+      const props = await this.getServerProperties(serverId);
+      const port = parseInt(props['server-port'] || '25565', 10);
+      if (port > 0) {
+        exec(`ufw allow ${port}/tcp`, () => {});
+        exec(`iptables -I INPUT -p tcp --dport ${port} -j ACCEPT`, () => {});
+      }
+    } catch {}
   }
 
   // EULA Management
