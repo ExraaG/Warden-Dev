@@ -35,23 +35,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const normalizeUrl = (rawUrl: string): string => {
     let clean = rawUrl.trim();
-    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-      clean = 'http://' + clean;
-    }
+    if (!clean) return 'http://localhost:22313';
+
+    // Remove any trailing slashes
     clean = clean.replace(/\/+$/, '');
 
-    try {
-      const parsed = new URL(clean);
-      if (!parsed.port && parsed.protocol === 'http:' && !parsed.hostname.includes(':')) {
-        if (parsed.hostname === 'localhost' || /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(parsed.hostname)) {
-          parsed.port = '22313';
-          clean = parsed.origin;
-        }
+    // If no protocol, default to http://
+    const hasProtocol = clean.startsWith('http://') || clean.startsWith('https://');
+    if (!hasProtocol) {
+      clean = 'http://' + clean;
+    }
+
+    // Check if port is specified
+    const match = clean.match(/^(https?:\/\/)(.*)$/);
+    if (match) {
+      const proto = match[1];
+      let hostPart = match[2];
+
+      // If hostPart does not contain a port (e.g. 192.168.1.230 or localhost)
+      if (!hostPart.includes(':')) {
+        hostPart = `${hostPart}:22313`;
       }
-    } catch {
-      if (!clean.includes(':', 6)) {
-        clean = `${clean}:22313`;
-      }
+      clean = `${proto}${hostPart}`;
     }
 
     return clean;

@@ -82,6 +82,10 @@ export const WardenWebViewScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           allowsBackForwardNavigationGestures={true}
           mixedContentMode="always"
+          originWhitelist={['*']}
+          allowFileAccess={true}
+          allowFileAccessFromFileURLs={true}
+          allowUniversalAccessFromFileURLs={true}
           onNavigationStateChange={(navState) => {
             setCanGoBack(navState.canGoBack);
           }}
