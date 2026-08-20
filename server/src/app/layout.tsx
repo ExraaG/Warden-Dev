@@ -20,7 +20,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" data-theme="emerald" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="dark"
+      data-theme="emerald"
+      suppressHydrationWarning
+      style={{ backgroundColor: '#0d0e11' }}
+    >
       <head>
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <script
@@ -36,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body
         suppressHydrationWarning
+        style={{ backgroundColor: '#0d0e11' }}
         className="bg-[var(--bg-main)] text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200"
       >
         <RootLayoutClient>{children}</RootLayoutClient>
