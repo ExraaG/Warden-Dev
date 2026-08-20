@@ -195,7 +195,13 @@ export function RootLayoutClient({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const res = await fetch('/api/v1/auth/status');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('warden_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-Warden-Token'] = token;
+      }
+      const res = await fetch('/api/v1/auth/status', { headers });
       const data = await res.json();
       if (data.success && data.data) {
         setAuthStatus(data.data);
@@ -207,6 +213,9 @@ export function RootLayoutClient({ children }: { children: React.ReactNode }) {
           setCurrentUser(null);
           setIsTempRecovery(false);
           setTempExpiresAt(undefined);
+          if (token && !data.data.authenticated) {
+            localStorage.removeItem('warden_token');
+          }
         }
       }
     } catch (err) {
@@ -218,7 +227,14 @@ export function RootLayoutClient({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST' });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('warden_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-Warden-Token'] = token;
+      }
+      await fetch('/api/v1/auth/logout', { method: 'POST', headers });
+      localStorage.removeItem('warden_token');
       setAuthStatus((prev) => ({ ...prev, authenticated: false, user: undefined }));
       setCurrentUser(null);
       setIsTempRecovery(false);

@@ -17,6 +17,7 @@ const nextHandler = nextApp.getRequestHandler();
 async function bootstrap() {
   await nextApp.prepare();
   const app = express();
+  app.set('trust proxy', true);
 
   app.use(express.json({ limit: '150mb' }));
   app.use(express.urlencoded({ limit: '150mb', extended: true }));

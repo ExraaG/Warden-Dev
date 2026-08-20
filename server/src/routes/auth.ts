@@ -20,20 +20,23 @@ export const authRouter = Router();
 
 const COOKIE_NAME = 'warden_token';
 
-const setAuthCookie = (res: Response, token: string, isTemp = false) => {
+const setAuthCookie = (res: Response, token: string, isTemp = false, req?: Request) => {
   const maxAge = isTemp ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  const isHttps = req ? Boolean(req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     sameSite: 'lax',
     maxAge,
     path: '/',
   });
 };
 
-const clearAuthCookie = (res: Response) => {
+const clearAuthCookie = (res: Response, req?: Request) => {
+  const isHttps = req ? Boolean(req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
+    secure: isHttps,
     sameSite: 'lax',
     path: '/',
   });
@@ -48,7 +51,11 @@ export const extractToken = (req: Request): string | null => {
   }
   const authHeader = req.header('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7);
+    return authHeader.substring(7).trim();
+  }
+  const customHeader = req.header('X-Warden-Token');
+  if (customHeader) {
+    return customHeader.trim();
   }
   return null;
 };
@@ -199,7 +206,7 @@ authRouter.post('/setup', async (req: Request, res: Response) => {
     db.createUser(adminUser);
 
     const token = AuthManager.generateToken(adminUser);
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, false, req);
 
     res.json({
       success: true,
@@ -305,7 +312,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     db.createUser(newUser);
 
     const token = AuthManager.generateToken(newUser);
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, false, req);
 
     res.json({
       success: true,
@@ -391,7 +398,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
 
     const token = AuthManager.generateToken(user);
     const isTemp = user.role === 'temp_recovery';
-    setAuthCookie(res, token, isTemp);
+    setAuthCookie(res, token, isTemp, req);
 
     res.json({
       success: true,
@@ -412,8 +419,8 @@ authRouter.post('/login', async (req: Request, res: Response) => {
 });
 
 // ── 4. LOGOUT ──
-authRouter.post('/logout', (_req: Request, res: Response) => {
-  clearAuthCookie(res);
+authRouter.post('/logout', (req: Request, res: Response) => {
+  clearAuthCookie(res, req);
   res.json({ success: true, message: 'Logged out successfully.' });
 });
 

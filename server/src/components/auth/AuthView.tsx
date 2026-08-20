@@ -218,6 +218,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
         return;
       }
 
+      if (data.data?.token) {
+        localStorage.setItem('warden_token', data.data.token);
+      }
       showToast(`Welcome back, ${data.data.user.username}!`, 'success');
       onAuthenticated(data.data.user, data.data.isTempRecovery, data.data.expiresAt);
     } catch (err: any) {
@@ -291,6 +294,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
         throw new Error(data.error || 'Setup failed.');
       }
 
+      if (data.data?.token) {
+        localStorage.setItem('warden_token', data.data.token);
+      }
       showToast('Warden master account created successfully!', 'success');
       onAuthenticated(data.data.user);
     } catch (err: any) {
@@ -364,6 +370,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
         throw new Error(data.error || 'Registration failed.');
       }
 
+      if (data.data?.token) {
+        localStorage.setItem('warden_token', data.data.token);
+      }
       showToast(`Account created! Welcome, ${data.data.user.username}!`, 'success');
       onAuthenticated(data.data.user);
     } catch (err: any) {
@@ -403,6 +412,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
         throw new Error(data.error || '2FA verification failed.');
       }
 
+      if (data.data?.token) {
+        localStorage.setItem('warden_token', data.data.token);
+      }
       setGeneratedRecoveryCodes(data.data.recoveryCodes || []);
       setPendingUser(data.data.user);
       setMode('setup_recovery_codes');
