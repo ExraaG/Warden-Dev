@@ -144,10 +144,13 @@ authRouter.post('/setup', async (req: Request, res: Response) => {
     const { username, password, enableTotp, totpSecret, totpCode } =
       req.body as SetupPayload;
 
-    if (!username || !username.trim() || !password || password.length < 4) {
+    const cleanUsername = (username || '').replace(/\s+/g, '');
+    const cleanPassword = (password || '').replace(/\s+/g, '');
+
+    if (!cleanUsername || !cleanPassword || cleanPassword.length < 4) {
       return res.status(400).json({
         success: false,
-        error: 'Username and a secure password (at least 4 characters) are required.',
+        error: 'Username and password (at least 4 characters) are required. Spaces are not allowed.',
       });
     }
 
@@ -179,12 +182,13 @@ authRouter.post('/setup', async (req: Request, res: Response) => {
       hashedRecoveryCodes = codes.hashedCodes;
     }
 
-    const passwordHash = await AuthManager.hashPassword(password);
+    const passwordHash = await AuthManager.hashPassword(cleanPassword);
     const adminUser: WardenUser = {
       id: `usr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
-      username: username.trim(),
+      username: cleanUsername,
       passwordHash,
       role: 'admin',
+      isOwner: true,
       totpEnabled: isTotpEnabled,
       totpSecret: isTotpEnabled ? validSecret : undefined,
       recoveryCodes: hashedRecoveryCodes,
@@ -217,7 +221,7 @@ authRouter.post('/setup', async (req: Request, res: Response) => {
 // ── 2B. GENERATE 2FA FOR REGISTRATION ──
 authRouter.post('/register/generate-2fa', async (req: Request, res: Response) => {
   try {
-    const username = (req.body.username || 'user').trim();
+    const username = (req.body.username || 'user').replace(/\s+/g, '');
     const result = await AuthManager.generateTotpSecret(username);
     res.json({
       success: true,
@@ -238,14 +242,16 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     const { username, password, enableTotp, totpSecret, totpCode } =
       req.body as RegisterPayload;
 
-    if (!username || !username.trim() || !password || password.length < 4) {
+    const cleanUsername = (username || '').replace(/\s+/g, '');
+    const cleanPassword = (password || '').replace(/\s+/g, '');
+
+    if (!cleanUsername || !cleanPassword || cleanPassword.length < 4) {
       return res.status(400).json({
         success: false,
-        error: 'Username and a password (at least 4 characters) are required.',
+        error: 'Username and password (at least 4 characters) are required. Spaces are not allowed.',
       });
     }
 
-    const cleanUsername = username.trim();
     const existing = db.getUserByUsername(cleanUsername);
     if (existing) {
       return res.status(400).json({
@@ -282,12 +288,13 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       hashedRecoveryCodes = codes.hashedCodes;
     }
 
-    const passwordHash = await AuthManager.hashPassword(password);
+    const passwordHash = await AuthManager.hashPassword(cleanPassword);
     const newUser: WardenUser = {
       id: `usr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
       username: cleanUsername,
       passwordHash,
       role: 'user',
+      isOwner: false,
       totpEnabled: isTotpEnabled,
       totpSecret: isTotpEnabled ? validSecret : undefined,
       recoveryCodes: hashedRecoveryCodes,
@@ -322,14 +329,17 @@ authRouter.post('/login', async (req: Request, res: Response) => {
   try {
     const { username, password, totpCode, recoveryCode } = req.body as LoginPayload;
 
-    if (!username || !password) {
+    const cleanUsername = (username || '').replace(/\s+/g, '');
+    const cleanPassword = (password || '').replace(/\s+/g, '');
+
+    if (!cleanUsername || !cleanPassword) {
       return res.status(400).json({
         success: false,
         error: 'Username and password are required.',
       });
     }
 
-    const user = db.getUserByUsername(username);
+    const user = db.getUserByUsername(cleanUsername);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -338,7 +348,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     }
 
     // Verify Password
-    const passwordMatch = await AuthManager.verifyPassword(password, user.passwordHash);
+    const passwordMatch = await AuthManager.verifyPassword(cleanPassword, user.passwordHash);
     if (!passwordMatch) {
       return res.status(401).json({
         success: false,

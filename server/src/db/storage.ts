@@ -180,6 +180,7 @@ export class Storage {
 
   public getUsers(): WardenUser[] {
     this.cleanupExpiredUsers();
+    this.ensureOwnerExists();
     return [...(this.data.users || [])];
   }
 
@@ -190,6 +191,7 @@ export class Storage {
 
   public getUserByUsername(username: string): WardenUser | undefined {
     this.cleanupExpiredUsers();
+    this.ensureOwnerExists();
     const cleanUsername = username.trim().toLowerCase();
     return (this.data.users || []).find(
       (u) => u.username.toLowerCase() === cleanUsername
@@ -198,11 +200,45 @@ export class Storage {
 
   public getUserById(id: string): WardenUser | undefined {
     this.cleanupExpiredUsers();
+    this.ensureOwnerExists();
     return (this.data.users || []).find((u) => u.id === id);
+  }
+
+  private ensureOwnerExists(): void {
+    if (!this.data.users || this.data.users.length === 0) return;
+    const hasOwner = this.data.users.some((u) => u.isOwner);
+    if (!hasOwner) {
+      const firstAdmin = this.data.users.find((u) => u.role === 'admin') || this.data.users[0];
+      if (firstAdmin) {
+        firstAdmin.isOwner = true;
+        firstAdmin.role = 'admin';
+        this.save();
+      }
+    }
+  }
+
+  public transferOwnership(currentOwnerId: string, targetUserId: string): boolean {
+    if (!this.data.users) return false;
+    this.ensureOwnerExists();
+    const currentOwner = this.data.users.find((u) => u.id === currentOwnerId);
+    const targetUser = this.data.users.find((u) => u.id === targetUserId);
+    if (!currentOwner || !targetUser) return false;
+    if (!currentOwner.isOwner) return false;
+
+    currentOwner.isOwner = false;
+    targetUser.isOwner = true;
+    targetUser.role = 'admin';
+    this.save();
+    return true;
   }
 
   public createUser(user: WardenUser): WardenUser {
     if (!this.data.users) this.data.users = [];
+    // If this is the first user ever, mark as owner
+    if (this.data.users.length === 0) {
+      user.isOwner = true;
+      user.role = 'admin';
+    }
     // Remove any existing user with same ID or username
     this.data.users = this.data.users.filter(
       (u) => u.id !== user.id && u.username.toLowerCase() !== user.username.toLowerCase()

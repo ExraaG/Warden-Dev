@@ -46,7 +46,11 @@ export default function SettingsPage() {
   const [loadingUsers, setLoadingUsers] = useState<boolean>(false);
   const [showAddUserModal, setShowAddUserModal] = useState<boolean>(false);
   const [showEditUserModal, setShowEditUserModal] = useState<boolean>(false);
+  const [showTransferOwnershipModal, setShowTransferOwnershipModal] = useState<boolean>(false);
   const [selectedUserToEdit, setSelectedUserToEdit] = useState<WardenUserPublic | null>(null);
+  const [selectedUserToTransfer, setSelectedUserToTransfer] = useState<WardenUserPublic | null>(null);
+  const [transferOwnershipConfirmInput, setTransferOwnershipConfirmInput] = useState<string>('');
+  const [transferringOwnership, setTransferringOwnership] = useState<boolean>(false);
   const [newUsername, setNewUsername] = useState<string>('');
   const [newUserPassword, setNewUserPassword] = useState<string>('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'user'>('user');
@@ -147,8 +151,15 @@ export default function SettingsPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername.trim() || !newUserPassword) {
-      showToast('Username and password are required.', 'error');
+    const cleanUsername = newUsername.replace(/\s+/g, '');
+    const cleanPassword = newUserPassword.replace(/\s+/g, '');
+
+    if (!cleanUsername || !cleanPassword) {
+      showToast('Username and password are required. Spaces are not allowed.', 'error');
+      return;
+    }
+    if (cleanPassword.length < 4) {
+      showToast('Password must be at least 4 characters long.', 'error');
       return;
     }
     setCreatingUser(true);
@@ -157,13 +168,13 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: newUsername.trim(),
-          password: newUserPassword,
+          username: cleanUsername,
+          password: cleanPassword,
           role: newUserRole,
         }),
       }).then((r) => r.json());
       if (res.success) {
-        showToast(`User account '${newUsername.trim()}' created!`, 'success');
+        showToast(`User account '${cleanUsername}' created!`, 'success');
         setNewUsername('');
         setNewUserPassword('');
         setNewUserRole('user');
@@ -186,9 +197,48 @@ export default function SettingsPage() {
     setShowEditUserModal(true);
   };
 
+  const handleOpenTransferOwnership = (user: WardenUserPublic) => {
+    setSelectedUserToTransfer(user);
+    setTransferOwnershipConfirmInput('');
+    setShowTransferOwnershipModal(true);
+  };
+
+  const handleTransferOwnership = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUserToTransfer) return;
+    if (transferOwnershipConfirmInput !== 'TRANSFER OWNERSHIP') {
+      showToast('Please type TRANSFER OWNERSHIP to confirm.', 'error');
+      return;
+    }
+
+    setTransferringOwnership(true);
+    try {
+      const res = await fetch(`/api/v1/users/${selectedUserToTransfer.id}/transfer-ownership`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }).then((r) => r.json());
+
+      if (res.success) {
+        showToast(`Ownership successfully transferred to ${selectedUserToTransfer.username}!`, 'success');
+        setShowTransferOwnershipModal(false);
+        setSelectedUserToTransfer(null);
+        setTransferOwnershipConfirmInput('');
+        fetchAuthUser();
+        fetchUsers();
+      } else {
+        showToast(res.error || 'Failed to transfer ownership.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to transfer ownership.', 'error');
+    } finally {
+      setTransferringOwnership(false);
+    }
+  };
+
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUserToEdit) return;
+    const cleanPassword = editUserPassword.replace(/\s+/g, '');
     setUpdatingUser(true);
     try {
       const res = await fetch(`/api/v1/users/${selectedUserToEdit.id}`, {
@@ -196,7 +246,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           role: editUserRole,
-          newPassword: editUserPassword || undefined,
+          newPassword: cleanPassword || undefined,
         }),
       }).then((r) => r.json());
       if (res.success) {
@@ -216,6 +266,10 @@ export default function SettingsPage() {
   };
 
   const handleDeleteUser = async (user: WardenUserPublic) => {
+    if (user.isOwner) {
+      showToast('Cannot delete the Owner account. Transfer ownership first.', 'error');
+      return;
+    }
     if (!confirm(`Are you sure you want to delete user '${user.username}'? This cannot be undone.`)) {
       return;
     }
@@ -237,12 +291,16 @@ export default function SettingsPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
+    const cleanCurrent = currentPassword.replace(/\s+/g, '');
+    const cleanNew = newPassword.replace(/\s+/g, '');
+    const cleanConfirm = confirmPassword.replace(/\s+/g, '');
+
+    if (cleanNew !== cleanConfirm) {
       showToast('New passwords do not match.', 'error');
       return;
     }
-    if (newPassword.length < 4) {
-      showToast('New password must be at least 4 characters long.', 'error');
+    if (cleanNew.length < 4) {
+      showToast('New password must be at least 4 characters long. Spaces are not allowed.', 'error');
       return;
     }
 
@@ -252,8 +310,8 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          currentPassword,
-          newPassword,
+          currentPassword: cleanCurrent,
+          newPassword: cleanNew,
         }),
       });
       const data = await res.json();
@@ -968,22 +1026,28 @@ export default function SettingsPage() {
                             {u.username.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-100 font-mono flex items-center gap-2">
+                            <div className="text-xs font-bold text-slate-100 font-mono flex items-center gap-2 flex-wrap">
                               <span>{u.username}</span>
                               {isSelf && (
                                 <span className="text-[9px] bg-[var(--color-accent)]/20 text-[var(--color-accent)] border border-[var(--color-accent)]/40 px-1.5 py-0.2 rounded uppercase font-bold font-mono">
                                   You
                                 </span>
                               )}
-                              <span
-                                className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold font-mono ${
-                                  u.role === 'admin'
-                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
-                                    : 'bg-slate-800 text-slate-300 border border-slate-700'
-                                }`}
-                              >
-                                {u.role === 'admin' ? 'Admin' : 'User'}
-                              </span>
+                              {u.isOwner ? (
+                                <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/50 px-1.5 py-0.2 rounded uppercase font-bold font-minecraft">
+                                  Owner
+                                </span>
+                              ) : (
+                                <span
+                                  className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold font-mono ${
+                                    u.role === 'admin'
+                                      ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
+                                      : 'bg-slate-800 text-slate-300 border border-slate-700'
+                                  }`}
+                                >
+                                  {u.role === 'admin' ? 'Admin' : 'User'}
+                                </span>
+                              )}
                               {u.totpEnabled ? (
                                 <span className="text-[9px] bg-emerald-950/50 text-emerald-300 border border-emerald-800/40 px-1.5 py-0.2 rounded font-mono">
                                   2FA
@@ -1000,7 +1064,20 @@ export default function SettingsPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
+                          {currentUser?.isOwner && !u.isOwner && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenTransferOwnership(u)}
+                              className="font-minecraft text-[11px] px-2.5 py-1 h-7 border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
+                              title="Transfer ownership of Warden to this user"
+                            >
+                              <WardenIcon name="users" size={12} className="text-amber-400" />
+                              <span>Transfer Ownership</span>
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             variant="outline"
@@ -1015,10 +1092,11 @@ export default function SettingsPage() {
                             type="button"
                             variant="danger"
                             size="sm"
-                            disabled={isSelf || isDeleting}
+                            disabled={isSelf || u.isOwner || isDeleting}
                             isLoading={isDeleting}
                             onClick={() => handleDeleteUser(u)}
                             className="font-mono text-xs px-2.5 py-1 h-7 disabled:opacity-30"
+                            title={u.isOwner ? 'Cannot delete the Owner account' : 'Delete user'}
                           >
                             <WardenIcon name="trash" size={12} />
                             Delete
@@ -1155,7 +1233,10 @@ export default function SettingsPage() {
               required
               autoFocus
               value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
+              onChange={(e) => setNewUsername(e.target.value.replace(/\s+/g, ''))}
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.code === 'Space') e.preventDefault();
+              }}
               placeholder="e.g. Alex"
               className="w-full h-10 bg-[var(--bg-main)] border border-[var(--color-border)] px-3 rounded-md text-sm text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
             />
@@ -1225,11 +1306,17 @@ export default function SettingsPage() {
               <select
                 value={editUserRole}
                 onChange={(e) => setEditUserRole(e.target.value as 'admin' | 'user')}
-                className="w-full h-10 bg-[var(--bg-main)] border border-[var(--color-border)] px-3 rounded-md text-xs sm:text-sm text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                disabled={selectedUserToEdit.isOwner}
+                className="w-full h-10 bg-[var(--bg-main)] border border-[var(--color-border)] px-3 rounded-md text-xs sm:text-sm text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] disabled:opacity-50"
               >
                 <option value="user">Standard User (Assigned servers &amp; own servers)</option>
                 <option value="admin">Administrator (Full system &amp; all server access)</option>
               </select>
+              {selectedUserToEdit.isOwner && (
+                <p className="text-[10px] text-amber-400 font-mono mt-1">
+                  The Owner account cannot be demoted. Transfer ownership first.
+                </p>
+              )}
             </div>
 
             <div>
@@ -1273,6 +1360,75 @@ export default function SettingsPage() {
           </form>
         )}
       </Modal>
+
+      {/* Transfer Ownership Modal */}
+      {showTransferOwnershipModal && selectedUserToTransfer && (
+        <Modal
+          isOpen={showTransferOwnershipModal}
+          onClose={() => {
+            if (!transferringOwnership) {
+              setShowTransferOwnershipModal(false);
+              setSelectedUserToTransfer(null);
+              setTransferOwnershipConfirmInput('');
+            }
+          }}
+          title={`Transfer Ownership to ${selectedUserToTransfer.username}`}
+          maxWidth="md"
+        >
+          <form onSubmit={handleTransferOwnership} className="space-y-4">
+            <div className="bg-amber-950/30 border border-amber-500/40 rounded-lg p-3.5 text-xs text-amber-200 font-mono leading-relaxed space-y-1.5">
+              <div className="font-bold flex items-center gap-1.5 text-amber-300">
+                <WardenIcon name="triangle-alert" size={15} className="text-amber-400" />
+                Transfer Primary Instance Ownership
+              </div>
+              <p className="text-[11px] text-amber-200/90">
+                Transferring ownership will grant <strong className="text-white font-bold">{selectedUserToTransfer.username}</strong> full primary control over this Warden host. You will remain an Administrator.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs text-slate-300 font-mono">
+                To confirm, type <strong className="text-amber-400 font-mono select-all bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/40">TRANSFER OWNERSHIP</strong> below:
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={transferOwnershipConfirmInput}
+                onChange={(e) => setTransferOwnershipConfirmInput(e.target.value)}
+                placeholder="TRANSFER OWNERSHIP"
+                className="w-full h-9 bg-[var(--bg-main)] border border-[var(--color-border)] focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 px-3 rounded-md text-xs text-slate-100 font-mono"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--color-border)]">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={transferringOwnership}
+                onClick={() => {
+                  setShowTransferOwnershipModal(false);
+                  setSelectedUserToTransfer(null);
+                  setTransferOwnershipConfirmInput('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                isLoading={transferringOwnership}
+                disabled={transferOwnershipConfirmInput !== 'TRANSFER OWNERSHIP' || transferringOwnership}
+                className="font-minecraft text-xs bg-amber-500 hover:bg-amber-600 text-black px-4"
+              >
+                <WardenIcon name="users" size={13} className="text-black" />
+                Confirm Transfer
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* 2FA Enable Modal (QR Code) */}
       <Modal

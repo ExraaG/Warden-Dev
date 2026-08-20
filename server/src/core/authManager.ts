@@ -287,6 +287,7 @@ export class AuthManager {
       id: user.id,
       username: user.username,
       role: user.role,
+      isOwner: Boolean(user.isOwner),
       totpEnabled: user.totpEnabled,
       createdAt: user.createdAt,
       isTempRecovery: user.role === 'temp_recovery',

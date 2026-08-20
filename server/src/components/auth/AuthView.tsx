@@ -505,7 +505,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
                   required
                   autoFocus={!requires2FA}
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.replace(/\s+/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.code === 'Space') e.preventDefault();
+                  }}
                   placeholder="NotchGamer"
                   className="w-full h-9 sm:h-10 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--color-border)] px-3 rounded-md text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/60 focus:border-[var(--color-accent)] font-mono transition-all"
                 />
@@ -573,7 +576,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
                         required
                         autoFocus
                         value={recoveryCode}
-                        onChange={(e) => setRecoveryCode(e.target.value.toUpperCase())}
+                        onChange={(e) => setRecoveryCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === ' ' || e.code === 'Space') e.preventDefault();
+                        }}
                         placeholder="XXXX-XXXX-XXXX-XXXX"
                         className="w-full h-9 sm:h-10 bg-[var(--bg-surface)] border border-[var(--color-border)] px-3 rounded-md text-xs sm:text-sm text-slate-100 font-mono uppercase tracking-widest text-center focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
                       />
@@ -669,7 +675,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
                   required
                   autoFocus
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.replace(/\s+/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.code === 'Space') e.preventDefault();
+                  }}
                   placeholder="PlayerOne"
                   className="w-full h-9 sm:h-10 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--color-border)] px-3 rounded-md text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/60 focus:border-[var(--color-accent)] font-mono transition-all"
                 />
@@ -757,7 +766,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
                   required
                   autoFocus
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.replace(/\s+/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.code === 'Space') e.preventDefault();
+                  }}
                   placeholder="NotchGamer"
                   className="w-full h-9 sm:h-10 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--color-border)] px-3 rounded-md text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/60 focus:border-[var(--color-accent)] font-mono transition-all"
                 />

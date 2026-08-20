@@ -895,28 +895,32 @@ apiRouter.post('/v1/users', authMiddleware, async (req: Request, res: Response) 
   }
 
   const { username, password, role } = req.body as CreateUserPayload;
-  if (!username || !password) {
-    return res.status(400).json({ success: false, error: 'Username and password are required.' } as ApiResponse<null>);
+  const cleanUsername = (username || '').replace(/\s+/g, '');
+  const cleanPassword = (password || '').replace(/\s+/g, '');
+
+  if (!cleanUsername || !cleanPassword) {
+    return res.status(400).json({ success: false, error: 'Username and password are required. Spaces are not allowed.' } as ApiResponse<null>);
   }
-  if (username.trim().length < 2) {
+  if (cleanUsername.length < 2) {
     return res.status(400).json({ success: false, error: 'Username must be at least 2 characters long.' } as ApiResponse<null>);
   }
-  if (password.length < 4) {
+  if (cleanPassword.length < 4) {
     return res.status(400).json({ success: false, error: 'Password must be at least 4 characters long.' } as ApiResponse<null>);
   }
 
-  const existing = db.getUserByUsername(username.trim());
+  const existing = db.getUserByUsername(cleanUsername);
   if (existing) {
-    return res.status(400).json({ success: false, error: `User '${username.trim()}' already exists.` } as ApiResponse<null>);
+    return res.status(400).json({ success: false, error: `User '${cleanUsername}' already exists.` } as ApiResponse<null>);
   }
 
   try {
-    const passwordHash = await AuthManager.hashPassword(password);
+    const passwordHash = await AuthManager.hashPassword(cleanPassword);
     const newUser: WardenUser = {
       id: `user-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
-      username: username.trim(),
+      username: cleanUsername,
       passwordHash,
       role: role === 'admin' ? 'admin' : 'user',
+      isOwner: false,
       totpEnabled: false,
       recoveryCodes: [],
       createdAt: new Date().toISOString(),
@@ -947,6 +951,9 @@ apiRouter.patch('/v1/users/:id', authMiddleware, async (req: Request, res: Respo
   const updates: Partial<WardenUser> = {};
 
   if (role && (role === 'admin' || role === 'user')) {
+    if (targetUser.isOwner && role === 'user') {
+      return res.status(400).json({ success: false, error: 'Cannot demote the Owner account. Please transfer ownership first.' } as ApiResponse<null>);
+    }
     // If demoting an admin, ensure they are not the last admin
     if (targetUser.role === 'admin' && role === 'user') {
       const allAdmins = db.getUsers().filter((u) => u.role === 'admin');
@@ -958,10 +965,11 @@ apiRouter.patch('/v1/users/:id', authMiddleware, async (req: Request, res: Respo
   }
 
   if (newPassword) {
-    if (newPassword.length < 4) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 4 characters long.' } as ApiResponse<null>);
+    const cleanPassword = newPassword.replace(/\s+/g, '');
+    if (cleanPassword.length < 4) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 4 characters long. Spaces are not allowed.' } as ApiResponse<null>);
     }
-    updates.passwordHash = await AuthManager.hashPassword(newPassword);
+    updates.passwordHash = await AuthManager.hashPassword(cleanPassword);
   }
 
   try {
@@ -971,6 +979,36 @@ apiRouter.patch('/v1/users/:id', authMiddleware, async (req: Request, res: Respo
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message } as ApiResponse<null>);
   }
+});
+
+// 29B. Transfer Instance Ownership (Current Owner Only)
+apiRouter.post('/v1/users/:id/transfer-ownership', authMiddleware, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const { id } = req.params;
+  if (!user || !user.isOwner) {
+    return res.status(403).json({ success: false, error: 'Forbidden: Only the current Owner can transfer system ownership.' } as ApiResponse<null>);
+  }
+
+  if (user.id === id) {
+    return res.status(400).json({ success: false, error: 'You are already the owner of this Warden instance.' } as ApiResponse<null>);
+  }
+
+  const targetUser = db.getUserById(id);
+  if (!targetUser) {
+    return res.status(404).json({ success: false, error: 'Target user not found.' } as ApiResponse<null>);
+  }
+
+  const transferred = db.transferOwnership(user.id, id);
+  if (!transferred) {
+    return res.status(500).json({ success: false, error: 'Failed to transfer ownership.' } as ApiResponse<null>);
+  }
+
+  const updatedTarget = db.getUserById(id);
+  res.json({
+    success: true,
+    data: updatedTarget ? AuthManager.toPublicUser(updatedTarget) : null,
+    message: `Ownership successfully transferred to ${targetUser.username}.`,
+  } as ApiResponse<any>);
 });
 
 // 30. Delete User Account (Admin Only)
@@ -988,6 +1026,10 @@ apiRouter.delete('/v1/users/:id', authMiddleware, async (req: Request, res: Resp
   const targetUser = db.getUserById(id);
   if (!targetUser) {
     return res.status(404).json({ success: false, error: 'User not found.' } as ApiResponse<null>);
+  }
+
+  if (targetUser.isOwner) {
+    return res.status(400).json({ success: false, error: 'Cannot delete the Owner account. Please transfer ownership to another administrator first.' } as ApiResponse<null>);
   }
 
   if (targetUser.role === 'admin') {

@@ -225,6 +225,7 @@ export interface WardenUser {
     username: string;
     passwordHash: string;
     role: WardenUserRole;
+    isOwner?: boolean;
     totpEnabled: boolean;
     totpSecret?: string;
     recoveryCodes: string[];
@@ -236,6 +237,7 @@ export interface WardenUserPublic {
     id: string;
     username: string;
     role: WardenUserRole;
+    isOwner?: boolean;
     totpEnabled: boolean;
     createdAt: string;
     isTempRecovery?: boolean;

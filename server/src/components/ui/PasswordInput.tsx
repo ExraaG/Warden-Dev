@@ -11,9 +11,27 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   className,
   containerClassName,
   disabled,
+  onChange,
+  onKeyDown,
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+    }
+    if (onKeyDown) {
+      onKeyDown(e);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.target.value = e.target.value.replace(/\s+/g, '');
+    if (onChange) {
+      onChange(e);
+    }
+  };
 
   return (
     <div className={clsx('relative flex items-center w-full', containerClassName)}>
@@ -21,6 +39,8 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
         {...props}
         type={showPassword ? 'text' : 'password'}
         disabled={disabled}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
         className={clsx(
           'w-full h-9 sm:h-10 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--color-border)] pl-3 pr-10 rounded-md text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/60 focus:border-[var(--color-accent)] font-mono transition-all',
           disabled && 'opacity-50 cursor-not-allowed',
