@@ -8,19 +8,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
   ActivityIndicator,
 } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
 
-const WardenLogoSvg = ({ size = 48, color = '#34d399' }: { size?: number; color?: string }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <Rect x="3" y="5" width="18" height="14" rx="3" />
-    <Path d="M7 10h2v4H7z" fill={color} />
-    <Path d="M15 10h2v4h-2z" fill={color} />
-    <Path d="M10 14h4" />
-    <Path d="M2 10v4" />
-    <Path d="M22 10v4" />
+const IconCheck = ({ size = 14, color = '#0d0e11' }: { size?: number; color?: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 6L9 17l-5-5" />
+  </Svg>
+);
+
+const IconAlert = ({ size = 16, color = '#f87171' }: { size?: number; color?: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <Path d="M12 9v4" />
+    <Path d="M12 17h.01" />
   </Svg>
 );
 
@@ -57,33 +61,26 @@ export const OnboardingScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {/* Header Branding (Matches Web AuthView) */}
-        <View style={styles.headerContainer}>
-          <View style={styles.iconBox}>
-            <WardenLogoSvg size={36} color="#34d399" />
-          </View>
-          <Text style={styles.brandTitle}>WARDEN</Text>
-          <Text style={styles.brandSubtitle}>MINECRAFT SERVER ORCHESTRATOR</Text>
-          <View style={styles.versionBadge}>
-            <Text style={styles.versionBadgeText}>STANDALONE CLIENT</Text>
-          </View>
+        {/* Exact Official Warden Logo (Identical to Web AuthView) */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../assets/warden_logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
-        {/* Main Card */}
+        {/* Exact Web Card Component Styling */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>SERVER CONNECTION</Text>
-            <Text style={styles.cardSubtitle}>
-              Enter your Warden server endpoint or host IP address to launch.
-            </Text>
-          </View>
-
+          {/* Error Banner (Identical to Web) */}
           {errorMsg && (
             <View style={styles.errorBox}>
+              <IconAlert size={16} color="#f87171" />
               <Text style={styles.errorText}>{errorMsg}</Text>
             </View>
           )}
 
+          {/* Form Group */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>SERVER ENDPOINT / IP</Text>
             <TextInput
@@ -94,62 +91,66 @@ export const OnboardingScreen: React.FC = () => {
                 if (errorMsg) setErrorMsg(null);
               }}
               placeholder="http://localhost:22313"
-              placeholderTextColor="#475569"
+              placeholderTextColor="#64748b"
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
             />
-
-            {/* Presets */}
-            <View style={styles.presetContainer}>
-              <TouchableOpacity
-                style={[styles.presetChip, url === 'http://localhost:22313' && styles.presetChipActive]}
-                onPress={() => handleApplyPreset('http://localhost:22313')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.presetText, url === 'http://localhost:22313' && styles.presetTextActive]}>
-                  Localhost (USB)
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.presetChip, url === 'http://10.0.2.2:22313' && styles.presetChipActive]}
-                onPress={() => handleApplyPreset('http://10.0.2.2:22313')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.presetText, url === 'http://10.0.2.2:22313' && styles.presetTextActive]}>
-                  Emulator (10.0.2.2)
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.presetChip, url.includes('192.168.') && styles.presetChipActive]}
-                onPress={() => handleApplyPreset('http://192.168.1.231:22313')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.presetText, url.includes('192.168.') && styles.presetTextActive]}>
-                  LAN Host (:22313)
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
 
+          {/* Quick Presets */}
+          <View style={styles.presetsRow}>
+            <TouchableOpacity
+              style={[styles.presetBtn, url === 'http://localhost:22313' && styles.presetBtnActive]}
+              onPress={() => handleApplyPreset('http://localhost:22313')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.presetBtnText, url === 'http://localhost:22313' && styles.presetBtnTextActive]}>
+                Localhost (USB)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.presetBtn, url === 'http://10.0.2.2:22313' && styles.presetBtnActive]}
+              onPress={() => handleApplyPreset('http://10.0.2.2:22313')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.presetBtnText, url === 'http://10.0.2.2:22313' && styles.presetBtnTextActive]}>
+                Emulator
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.presetBtn, url.includes('192.168.') && styles.presetBtnActive]}
+              onPress={() => handleApplyPreset('http://192.168.1.231:22313')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.presetBtnText, url.includes('192.168.') && styles.presetBtnTextActive]}>
+                LAN Host
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Exact Web Primary Button (Emerald #1bd96a with Minecraft Font) */}
           <TouchableOpacity
-            style={[styles.submitBtn, connecting && styles.submitBtnDisabled]}
+            style={[styles.primaryButton, connecting && styles.buttonDisabled]}
             onPress={handleConnect}
             disabled={connecting}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             {connecting ? (
-              <ActivityIndicator size="small" color="#090d16" />
+              <ActivityIndicator size="small" color="#0d0e11" />
             ) : (
-              <Text style={styles.submitBtnText}>CONNECT &amp; LAUNCH</Text>
+              <>
+                <IconCheck size={14} color="#0d0e11" />
+                <Text style={styles.buttonText}>CONNECT &amp; LAUNCH</Text>
+              </>
             )}
           </TouchableOpacity>
 
-          <View style={styles.cardFooter}>
-            <Text style={styles.footerNote}>
-              Warden opens directly inside the app with full live console, modpacks, players, and 2FA authentication.
+          <View style={styles.footerInfo}>
+            <Text style={styles.footerText}>
+              Opens Warden web dashboard with 2FA, live console, and servers.
             </Text>
           </View>
         </View>
@@ -167,182 +168,123 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    paddingVertical: 36,
+    padding: 16,
   },
-  headerContainer: {
+  logoContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
   },
-  iconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: 'rgba(52, 211, 153, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  brandTitle: {
-    fontFamily: 'monospace',
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#f8fafc',
-    letterSpacing: 2,
-  },
-  brandSubtitle: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#34d399',
-    letterSpacing: 1.2,
-    marginTop: 4,
-    fontWeight: 'bold',
-  },
-  versionBadge: {
-    marginTop: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: '#13161c',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#222734',
-  },
-  versionBadgeText: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    color: '#64748b',
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+  logoImage: {
+    width: 220,
+    height: 36,
   },
   card: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 425,
     backgroundColor: '#13161c',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#222734',
+    borderColor: '#232733',
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  cardHeader: {
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#f8fafc',
-    letterSpacing: 1,
-  },
-  cardSubtitle: {
-    fontFamily: 'monospace',
-    fontSize: 11,
-    color: '#94a3b8',
-    marginTop: 4,
-    lineHeight: 16,
   },
   errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(69, 10, 10, 0.5)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
+    borderColor: 'rgba(239, 68, 68, 0.5)',
     borderRadius: 8,
-    padding: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     marginBottom: 16,
   },
   errorText: {
-    fontFamily: 'monospace',
+    flex: 1,
+    fontFamily: 'Minecraft',
     fontSize: 11,
     color: '#fca5a5',
     lineHeight: 15,
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   label: {
-    fontFamily: 'monospace',
+    fontFamily: 'Minecraft',
     fontSize: 11,
-    fontWeight: 'bold',
     color: '#cbd5e1',
+    marginBottom: 6,
     letterSpacing: 0.5,
-    marginBottom: 8,
   },
   input: {
-    backgroundColor: '#090d16',
+    width: '100%',
+    height: 40,
+    backgroundColor: '#0d0e11',
     borderWidth: 1,
-    borderColor: '#222734',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: 'monospace',
+    borderColor: '#232733',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    fontFamily: 'Minecraft',
     fontSize: 13,
     color: '#f8fafc',
   },
-  presetContainer: {
+  presetsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
+    gap: 6,
+    marginBottom: 20,
   },
-  presetChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+  presetBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
     borderRadius: 6,
-    backgroundColor: '#090d16',
+    backgroundColor: '#191c24',
     borderWidth: 1,
-    borderColor: '#222734',
-  },
-  presetChipActive: {
-    backgroundColor: 'rgba(52, 211, 153, 0.12)',
-    borderColor: '#34d399',
-  },
-  presetText: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#64748b',
-    fontWeight: 'bold',
-  },
-  presetTextActive: {
-    color: '#34d399',
-  },
-  submitBtn: {
-    backgroundColor: '#10b981',
-    borderRadius: 10,
-    paddingVertical: 14,
+    borderColor: '#232733',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
   },
-  submitBtnDisabled: {
-    opacity: 0.7,
+  presetBtnActive: {
+    borderColor: 'rgba(27, 217, 106, 0.5)',
+    backgroundColor: 'rgba(27, 217, 106, 0.12)',
   },
-  submitBtnText: {
-    fontFamily: 'monospace',
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#090d16',
-    letterSpacing: 1,
-  },
-  cardFooter: {
-    marginTop: 18,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-  },
-  footerNote: {
-    fontFamily: 'monospace',
+  presetBtnText: {
+    fontFamily: 'Minecraft',
     fontSize: 10,
     color: '#64748b',
-    lineHeight: 14,
+  },
+  presetBtnTextActive: {
+    color: '#1bd96a',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    height: 40,
+    backgroundColor: '#1bd96a',
+    borderRadius: 6,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    fontFamily: 'Minecraft',
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#0d0e11',
+    letterSpacing: 0.5,
+  },
+  footerInfo: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontFamily: 'Minecraft',
+    fontSize: 10,
+    color: '#64748b',
     textAlign: 'center',
+    lineHeight: 14,
   },
 });
