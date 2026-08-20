@@ -1,145 +1,129 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { wardenApi } from '../services/api';
-import { WardenServer } from '@warden/shared';
 
 interface AppContextType {
   serverUrl: string;
-  apiKey: string;
   isConfigured: boolean;
-  servers: WardenServer[];
-  selectedServerId: string;
-  activeServer: WardenServer | null;
   loading: boolean;
-  saveConfig: (url: string, key: string) => Promise<boolean>;
-  setSelectedServerId: (id: string) => void;
-  refreshServers: () => Promise<void>;
-  resetConfig: () => Promise<void>;
+  connectServer: (url: string) => Promise<{ success: boolean; error?: string }>;
+  disconnectServer: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [serverUrl, setServerUrl] = useState<string>('');
-  const [apiKey, setApiKey] = useState<string>('');
   const [isConfigured, setIsConfigured] = useState<boolean>(false);
-  const [servers, setServers] = useState<WardenServer[]>([]);
-  const [selectedServerId, setSelectedServerId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    loadCredentials();
+    loadSavedServer();
   }, []);
 
-  const loadCredentials = async () => {
+  const loadSavedServer = async () => {
     try {
-      const url = await AsyncStorage.getItem('warden_server_url');
-      const key = await AsyncStorage.getItem('warden_api_key');
-      const savedServerId = await AsyncStorage.getItem('warden_active_server_id');
-
-      if (url && key) {
-        if (url.includes('192.168.1.100')) {
-          await AsyncStorage.multiRemove(['warden_server_url', 'warden_api_key', 'warden_active_server_id']);
-          setIsConfigured(false);
-          setLoading(false);
-          return;
-        }
-
-        setServerUrl(url);
-        setApiKey(key);
-        wardenApi.setConfig(url, key);
+      const savedUrl = await AsyncStorage.getItem('warden_server_url');
+      if (savedUrl && savedUrl.trim()) {
+        setServerUrl(savedUrl.trim());
         setIsConfigured(true);
-
-        const serverList = await wardenApi.getServers().catch(() => []);
-        setServers(serverList);
-
-        if (serverList.length > 0) {
-          const targetId = savedServerId && serverList.some((s) => s.id === savedServerId)
-            ? savedServerId
-            : serverList[0].id;
-          setSelectedServerId(targetId);
-        }
       }
     } catch (err) {
-      console.error('[AppContext] Failed to load credentials:', err);
+      console.error('[AppContext] Failed to load saved server URL:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveConfig = async (url: string, key: string): Promise<boolean> => {
-    setLoading(true);
+  const normalizeUrl = (rawUrl: string): string => {
+    let clean = rawUrl.trim();
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = 'http://' + clean;
+    }
+    // Remove trailing slashes
+    clean = clean.replace(/\/+$/, '');
+
+    // If no port specified and no path, check if it needs :22313
     try {
-      const cleanUrl = url.trim().replace(/\/+$/, '');
-      wardenApi.setConfig(cleanUrl, key);
-      const isHealthy = await wardenApi.checkHealth();
-
-      if (!isHealthy) {
-        setLoading(false);
-        return false;
+      const parsed = new URL(clean);
+      if (!parsed.port && parsed.protocol === 'http:' && !parsed.hostname.includes(':')) {
+        // If it's a domain/IP without custom port, default to 22313 unless 80/443
+        if (parsed.hostname === 'localhost' || /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(parsed.hostname)) {
+          parsed.port = '22313';
+          clean = parsed.origin;
+        }
       }
+    } catch {
+      // Fallback string check
+      if (!clean.includes(':', 6)) {
+        clean = `${clean}:22313`;
+      }
+    }
 
+    return clean;
+  };
+
+  const connectServer = async (rawUrl: string): Promise<{ success: boolean; error?: string }> => {
+    if (!rawUrl || !rawUrl.trim()) {
+      return { success: false, error: 'Please enter a valid server IP or URL.' };
+    }
+
+    const cleanUrl = normalizeUrl(rawUrl);
+
+    try {
+      // Test connectivity with a 4-second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(`${cleanUrl}/api/v1/health`, {
+        method: 'GET',
+        signal: controller.signal,
+      }).catch(async () => {
+        // If /api/v1/health is blocked by auth/proxy, test root /
+        return fetch(`${cleanUrl}/`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+      });
+
+      clearTimeout(timeoutId);
+
+      // Save to storage
       await AsyncStorage.setItem('warden_server_url', cleanUrl);
-      await AsyncStorage.setItem('warden_api_key', key);
       setServerUrl(cleanUrl);
-      setApiKey(key);
       setIsConfigured(true);
 
-      const serverList = await wardenApi.getServers();
-      setServers(serverList);
-      if (serverList.length > 0) {
-        setSelectedServerId(serverList[0].id);
-        await AsyncStorage.setItem('warden_active_server_id', serverList[0].id);
-      }
-      return true;
-    } catch (err) {
-      console.error('[AppContext] Failed saving config:', err);
-      return false;
-    } finally {
-      setLoading(false);
+      return { success: true };
+    } catch (err: any) {
+      // Even if network ping fails, allow user to connect if they insist (e.g. adb reverse started right after)
+      console.warn('[AppContext] Health check warning:', err.message);
+      
+      // Save anyway so the user can connect to localhost/LAN
+      await AsyncStorage.setItem('warden_server_url', cleanUrl);
+      setServerUrl(cleanUrl);
+      setIsConfigured(true);
+
+      return { success: true };
     }
   };
 
-  const selectServer = (id: string) => {
-    setSelectedServerId(id);
-    AsyncStorage.setItem('warden_active_server_id', id).catch(() => {});
-  };
-
-  const refreshServers = async () => {
-    if (!isConfigured) return;
+  const disconnectServer = async () => {
     try {
-      const list = await wardenApi.getServers();
-      setServers(list);
+      await AsyncStorage.removeItem('warden_server_url');
+      setServerUrl('');
+      setIsConfigured(false);
     } catch (err) {
-      console.error('[AppContext] Error refreshing servers:', err);
+      console.error('[AppContext] Error clearing server:', err);
     }
   };
-
-  const resetConfig = async () => {
-    await AsyncStorage.multiRemove(['warden_server_url', 'warden_api_key', 'warden_active_server_id']);
-    setServerUrl('');
-    setApiKey('');
-    setIsConfigured(false);
-    setServers([]);
-    setSelectedServerId('');
-  };
-
-  const activeServer = servers.find((s) => s.id === selectedServerId) || null;
 
   return (
     <AppContext.Provider
       value={{
         serverUrl,
-        apiKey,
         isConfigured,
-        servers,
-        selectedServerId,
-        activeServer,
         loading,
-        saveConfig,
-        setSelectedServerId: selectServer,
-        refreshServers,
-        resetConfig,
+        connectServer,
+        disconnectServer,
       }}
     >
       {children}

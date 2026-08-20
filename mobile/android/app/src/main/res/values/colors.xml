@@ -3,4 +3,5 @@
   <color name="colorPrimaryDark">#090d16</color>
   <color name="splashscreen_background">#090d16</color>
   <color name="iconBackground">#f59e0b</color>
+  <color name="ic_launcher_background">#090d16</color>
 </resources>

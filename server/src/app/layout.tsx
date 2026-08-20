@@ -399,6 +399,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <title>Warden - Minecraft Server &amp; Mod Ops</title>
         <meta name="description" content="Self-hosted Minecraft server and mod management tool" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <script
           dangerouslySetInnerHTML={{
