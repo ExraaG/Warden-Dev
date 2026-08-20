@@ -46,7 +46,7 @@ export default function DashboardPage() {
     port: 25565,
     minMemory: '2G',
     maxMemory: '4G',
-    autoStart: true,
+    autoStart: false,
   });
 
   // Import / Export Server State (.zip & Crafty Backups)
