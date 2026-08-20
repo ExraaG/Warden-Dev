@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import { Dropdown, DropdownOption } from '../components/ui/Dropdown';
 import { NumberInput } from '../components/ui/NumberInput';
 import { WardenIcon } from '../components/ui/WardenIcon';
+import { Checkbox } from '../components/ui/Checkbox';
 import { getCommandSuggestions } from '../utils/minecraftCommands';
 import { showToast } from '../components/ui/Toast';
 
@@ -3963,11 +3964,9 @@ export default function DashboardPage() {
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <input
-                                    type="checkbox"
+                                  <Checkbox
                                     checked={isChecked}
                                     onChange={() => handleToggleUserAccess(u.id)}
-                                    className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-[var(--color-accent)] focus:ring-[var(--color-accent)] cursor-pointer"
                                   />
                                   <div>
                                     <div className="text-xs font-bold text-slate-100 font-mono flex items-center gap-2">
@@ -4214,15 +4213,12 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex flex-col justify-end">
-                      <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-300 cursor-pointer select-none py-2.5">
-                        <input
-                          type="checkbox"
-                          checked={autoUpdateEnabled}
-                          onChange={(e) => setAutoUpdateEnabled(e.target.checked)}
-                          className="rounded border-[var(--color-border)] bg-[var(--bg-main)] text-[var(--color-accent)] focus:ring-0"
-                        />
-                        <span>Enable Automated Daily Updates</span>
-                      </label>
+                      <Checkbox
+                        checked={autoUpdateEnabled}
+                        onChange={setAutoUpdateEnabled}
+                        label="Enable Automated Daily Updates"
+                        className="py-2.5"
+                      />
                     </div>
                   </div>
 

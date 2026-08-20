@@ -9,6 +9,7 @@ import { showToast } from '../../components/ui/Toast';
 
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { Modal } from '../../components/ui/Modal';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { WardenUserPublic, TwoFactorGenerateResponse } from '@warden/shared';
 
 export default function SettingsPage() {
@@ -575,11 +576,9 @@ export default function SettingsPage() {
                   <div className="text-xs font-semibold text-slate-200">Automated Mod Updates</div>
                   <div className="text-[11px] text-slate-400 font-mono">Automatically checks Modrinth and updates modpacks with safety backup and rollback.</div>
                 </div>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={autoUpdateEnabled}
-                  onChange={(e) => setAutoUpdateEnabled(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                  onChange={setAutoUpdateEnabled}
                 />
               </div>
 
@@ -604,11 +603,9 @@ export default function SettingsPage() {
                   <div className="text-xs font-semibold text-slate-200">Automated Daily Server Restarts</div>
                   <div className="text-[11px] text-slate-400 font-mono">Safely restarts running Minecraft servers daily to clear memory leaks and keep ticks smooth.</div>
                 </div>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={autoRestartEnabled}
-                  onChange={(e) => setAutoRestartEnabled(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                  onChange={setAutoRestartEnabled}
                 />
               </div>
 
@@ -1568,18 +1565,14 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--color-border)] rounded-lg cursor-pointer">
-              <input
-                type="checkbox"
+            <div className="p-3 bg-[var(--bg-main)] border border-[var(--color-border)] rounded-lg">
+              <Checkbox
                 checked={devKeepCurrentAdmin}
-                onChange={(e) => setDevKeepCurrentAdmin(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                onChange={setDevKeepCurrentAdmin}
+                label={`Preserve My Current Admin Account (${currentUser?.username || 'Admin'})`}
+                description="Keep your active session logged in while wiping all other accounts."
               />
-              <div>
-                <div className="text-xs font-semibold text-slate-200">Preserve My Current Admin Account ({currentUser?.username})</div>
-                <div className="text-[10px] text-slate-400 font-mono">Keep your active session logged in while wiping all other accounts.</div>
-              </div>
-            </label>
+            </div>
 
             <div className="space-y-2">
               <label className="block text-xs text-slate-300 font-mono">

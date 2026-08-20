@@ -4,6 +4,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { WardenIcon } from '../ui/WardenIcon';
 import { PasswordInput } from '../ui/PasswordInput';
+import { Checkbox } from '../ui/Checkbox';
 import { showToast } from '../ui/Toast';
 import {
   AuthStatusResponse,
@@ -700,27 +701,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
               </div>
 
               {/* Optional 2FA Checkbox */}
-              <div
-                onClick={() => setWant2FAInSetup(!want2FAInSetup)}
-                className="flex items-center gap-2 pt-0.5 cursor-pointer select-none group"
-              >
-                <div
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                    want2FAInSetup
-                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-[#0d0e11]'
-                      : 'border-[var(--color-border)] bg-[var(--bg-main)] group-hover:border-[var(--color-accent)]/50'
-                  }`}
-                >
-                  {want2FAInSetup && (
-                    <svg className="w-3 h-3 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-                <span className="text-xs text-slate-300 group-hover:text-slate-100 transition-colors font-mono">
-                  Enable 2FA (Authenticator App)
-                </span>
-              </div>
+              <Checkbox
+                checked={want2FAInSetup}
+                onChange={setWant2FAInSetup}
+                label="Enable 2FA (Authenticator App)"
+                className="pt-0.5"
+              />
 
               <Button
                 type="submit"
@@ -803,27 +789,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ authStatus, onAuthenticated 
               </div>
 
               {/* Optional 2FA Checkbox */}
-              <div
-                onClick={() => setWant2FAInSetup(!want2FAInSetup)}
-                className="flex items-center gap-2 pt-0.5 cursor-pointer select-none group"
-              >
-                <div
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                    want2FAInSetup
-                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-[#0d0e11]'
-                      : 'border-[var(--color-border)] bg-[var(--bg-main)] group-hover:border-[var(--color-accent)]/50'
-                  }`}
-                >
-                  {want2FAInSetup && (
-                    <svg className="w-3 h-3 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-                <span className="text-xs text-slate-300 group-hover:text-slate-100 transition-colors font-mono">
-                  Enable 2FA (Authenticator App)
-                </span>
-              </div>
+              <Checkbox
+                checked={want2FAInSetup}
+                onChange={setWant2FAInSetup}
+                label="Enable 2FA (Authenticator App)"
+                className="pt-0.5"
+              />
 
               <Button
                 type="submit"
