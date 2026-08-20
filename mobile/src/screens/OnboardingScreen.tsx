@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
@@ -57,65 +58,68 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {/* Official Warden Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/warden_logo.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Card Container */}
-        <View style={styles.card}>
-          {errorMsg && (
-            <View style={styles.errorBox}>
-              <IconAlert size={16} color="#f87171" />
-              <Text style={styles.errorText}>{errorMsg}</Text>
-            </View>
-          )}
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>SERVER ENDPOINT / IP</Text>
-            <TextInput
-              style={styles.input}
-              value={url}
-              onChangeText={(text) => {
-                setUrl(text);
-                if (errorMsg) setErrorMsg(null);
-              }}
-              placeholder="http://localhost:22313"
-              placeholderTextColor="#64748b"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
+    <View style={styles.flex}>
+      <StatusBar barStyle="light-content" backgroundColor="#0d0e11" translucent={false} />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+          {/* Official Warden Logo */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../assets/warden_logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
             />
           </View>
 
-          {/* Primary Action Button */}
-          <TouchableOpacity
-            style={[styles.primaryButton, connecting && styles.buttonDisabled]}
-            onPress={handleConnect}
-            disabled={connecting}
-            activeOpacity={0.85}
-          >
-            {connecting ? (
-              <WardenSpinner size={16} color="#0d0e11" />
-            ) : (
-              <>
-                <IconCheck size={14} color="#0d0e11" />
-                <Text style={styles.buttonText}>CONNECT &amp; LAUNCH</Text>
-              </>
+          {/* Card Container */}
+          <View style={styles.card}>
+            {errorMsg && (
+              <View style={styles.errorBox}>
+                <IconAlert size={16} color="#f87171" />
+                <Text style={styles.errorText}>{errorMsg}</Text>
+              </View>
             )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>SERVER ENDPOINT / IP</Text>
+              <TextInput
+                style={styles.input}
+                value={url}
+                onChangeText={(text) => {
+                  setUrl(text);
+                  if (errorMsg) setErrorMsg(null);
+                }}
+                placeholder="http://localhost:22313"
+                placeholderTextColor="#64748b"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            </View>
+
+            {/* Primary Action Button */}
+            <TouchableOpacity
+              style={[styles.primaryButton, connecting && styles.buttonDisabled]}
+              onPress={handleConnect}
+              disabled={connecting}
+              activeOpacity={0.85}
+            >
+              {connecting ? (
+                <WardenSpinner size={16} color="#0d0e11" />
+              ) : (
+                <>
+                  <IconCheck size={14} color="#0d0e11" />
+                  <Text style={styles.buttonText}>CONNECT &amp; LAUNCH</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 

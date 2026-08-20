@@ -2,6 +2,8 @@ package com.warden.app
 
 import android.os.Build
 import android.os.Bundle
+import android.graphics.Color
+import android.view.WindowInsetsController
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -12,11 +14,19 @@ import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
-    // Set the theme to AppTheme BEFORE onCreate to support
-    // coloring the background, status bar, and navigation bar.
-    // This is required for expo-splash-screen.
-    setTheme(R.style.AppTheme);
+    setTheme(R.style.AppTheme)
     super.onCreate(null)
+
+    // Ensure status bar and navigation bar background match #0d0e11 perfectly
+    window.statusBarColor = Color.parseColor("#0d0e11")
+    window.navigationBarColor = Color.parseColor("#0d0e11")
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      window.insetsController?.setSystemBarsAppearance(
+        0,
+        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+      )
+    }
   }
 
   /**
