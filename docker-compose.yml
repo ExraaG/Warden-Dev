@@ -7,6 +7,9 @@ services:
     container_name: warden
     restart: unless-stopped
     network_mode: host
+    cap_add:
+      - NET_ADMIN      # Required: allows iptables/ufw to open Minecraft ports from inside Docker
+      - SYS_PTRACE     # Required: allows reading /proc/<pid> for PID file orphan tracking
     environment:
       - PORT=22313
       - TZ=${TZ:-Europe/Vienna}
