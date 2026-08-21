@@ -47,14 +47,13 @@ export class ServerProcess extends EventEmitter {
     this.serverDir = opts.serverDir;
     this.jarFile = opts.jarFile;
     this.javaPath = opts.javaPath || 'java';
-    this.minMemory = opts.minMemory || '2G';
+    this.minMemory = opts.minMemory || '1G';
     this.maxMemory = opts.maxMemory || '4G';
     this.jvmArgs = opts.jvmArgs || [
       '-XX:+UseG1GC',
       '-XX:MaxGCPauseMillis=200',
       '-XX:+UnlockExperimentalVMOptions',
       '-XX:+DisableExplicitGC',
-      '-XX:+AlwaysPreTouch',
     ];
   }
 

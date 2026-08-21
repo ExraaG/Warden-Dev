@@ -1,6 +1,6 @@
-// Auto-generated hardcoded version: v4-3151d97c1
-export const WARDEN_VERSION = 'v4-3151d97c1';
+// Auto-generated hardcoded version: v4-d3fbf6180
+export const WARDEN_VERSION = 'v4-d3fbf6180';
 export const WARDEN_VERSION_NUMBER = 4;
-export const WARDEN_GIT_HASH = '3151d97c1';
+export const WARDEN_GIT_HASH = 'd3fbf6180';
 export const WARDEN_RELEASE_TITLE = "v4 (c5a8da5d4)";
-export const WARDEN_BUILD_TIME = '2026-08-20T19:57:20.172Z';
+export const WARDEN_BUILD_TIME = '2026-08-21T08:52:02.310Z';

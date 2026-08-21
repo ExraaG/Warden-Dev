@@ -44,7 +44,7 @@ export default function DashboardPage() {
     loader: 'paper' as ServerLoader,
     mcVersion: '1.21.1',
     port: 25565,
-    minMemory: '2G',
+    minMemory: '1G',
     maxMemory: '4G',
     autoStart: false,
   });
