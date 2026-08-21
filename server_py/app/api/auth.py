@@ -37,14 +37,87 @@ def create_access_token(user_id: str) -> str:
     to_encode = {"sub": user_id, "exp": expire}
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    enableTotp: Optional[bool] = False
+
+@router.get("/status")
+async def auth_status(request: Request, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User))
+    users = result.scalars().all()
+    has_users = len(users) > 0
+
+    token = request.headers.get("X-Warden-Token")
+    if not token and "Authorization" in request.headers:
+        auth_hdr = request.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            token = auth_hdr[7:]
+    if not token and "warden_token" in request.cookies:
+        token = request.cookies.get("warden_token")
+
+    user_data = None
+    authenticated = False
+    if token:
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            user_id = payload.get("sub")
+            if user_id:
+                u_res = await db.execute(select(User).where(User.id == user_id))
+                user = u_res.scalars().first()
+                if user:
+                    user_data = user.to_dict()
+                    authenticated = True
+        except Exception:
+            pass
+
+    return {
+        "success": True,
+        "data": {
+            "hasUsers": has_users,
+            "authenticated": authenticated,
+            "user": user_data,
+        }
+    }
+
 @router.get("/setup-status")
 async def setup_status(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User))
     users = result.scalars().all()
     return {"success": True, "data": {"isSetup": len(users) > 0}}
 
+@router.post("/register")
+async def register(body: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.username == body.username))
+    if result.scalars().first():
+        raise HTTPException(status_code=400, detail="Username is already taken")
+
+    all_users = (await db.execute(select(User))).scalars().all()
+    role = "admin" if len(all_users) == 0 else "player"
+
+    user = User(
+        id=str(uuid.uuid4()),
+        username=body.username,
+        password_hash=hash_password(body.password),
+        role=role,
+        created_at=int(time.time()),
+        updated_at=int(time.time()),
+    )
+    db.add(user)
+    await db.commit()
+
+    token = create_access_token(user.id)
+    response.set_cookie(
+        key="warden_token",
+        value=token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+    )
+    return {"success": True, "data": {"token": token, "user": user.to_dict()}}
+
 @router.post("/setup")
-async def setup_admin(body: SetupRequest, db: AsyncSession = Depends(get_db)):
+async def setup_admin(body: SetupRequest, response: Response, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Initial setup has already been completed.")
@@ -61,6 +134,13 @@ async def setup_admin(body: SetupRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     token = create_access_token(user.id)
+    response.set_cookie(
+        key="warden_token",
+        value=token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+    )
     return {"success": True, "data": {"token": token, "user": user.to_dict()}}
 
 @router.post("/login")
