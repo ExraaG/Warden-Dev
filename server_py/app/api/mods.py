@@ -1,22 +1,24 @@
 import os
 import httpx
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel
 
 from app.api.deps import get_current_user
 from app.db.models import User
 from app.core.manager import server_manager
 
-router = APIRouter(prefix="/v1/servers/{server_id}/mods", tags=["mods"])
+router = APIRouter(tags=["mods"])
 
 class InstallModPayload(BaseModel):
-    versionId: str
+    versionId: Optional[str] = None
     downloadUrl: str
     filename: str
 
-@router.get("/search")
+@router.get("/v1/mods/search")
+@router.get("/v1/servers/{server_id}/mods/search")
 async def search_mods(
+    server_id: Optional[str] = None,
     query: str = "",
     loader: Optional[str] = None,
     version: Optional[str] = None,
@@ -47,9 +49,33 @@ async def search_mods(
             data = res.json()
             return {"success": True, "data": data.get("hits", [])}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Modrinth search failed: {e}")
+            return {"success": True, "data": []}
 
-@router.get("")
+@router.get("/v1/mods/{project_id}/versions")
+@router.get("/v1/servers/{server_id}/mods/versions")
+async def get_mod_versions(
+    project_id: Optional[str] = None,
+    server_id: Optional[str] = None,
+    loaders: Optional[str] = None,
+    game_versions: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+):
+    target_id = project_id or server_id
+    params = {}
+    if loaders:
+        params["loaders"] = f'["{loaders}"]'
+    if game_versions:
+        params["game_versions"] = f'["{game_versions}"]'
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            res = await client.get(f"https://api.modrinth.com/v2/project/{target_id}/version", params=params)
+            res.raise_for_status()
+            return {"success": True, "data": res.json()}
+        except Exception:
+            return {"success": True, "data": []}
+
+@router.get("/v1/servers/{server_id}/mods")
 async def get_installed_mods(
     server_id: str,
     current_user: User = Depends(get_current_user),
@@ -65,13 +91,14 @@ async def get_installed_mods(
             stat = os.stat(path)
             installed.append({
                 "filename": f,
+                "name": f.replace(".jar.disabled", "").replace(".jar", ""),
                 "enabled": not f.endswith(".disabled"),
                 "size": stat.st_size,
                 "modified": int(stat.st_mtime * 1000),
             })
     return {"success": True, "data": installed}
 
-@router.post("/install")
+@router.post("/v1/servers/{server_id}/mods/install")
 async def install_mod(
     server_id: str,
     payload: InstallModPayload,
@@ -91,7 +118,7 @@ async def install_mod(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to download mod: {e}")
 
-@router.delete("/{filename}")
+@router.delete("/v1/servers/{server_id}/mods/{filename}")
 async def delete_mod(
     server_id: str,
     filename: str,
@@ -103,7 +130,7 @@ async def delete_mod(
         os.remove(target_path)
     return {"success": True, "data": None}
 
-@router.post("/{filename}/toggle")
+@router.post("/v1/servers/{server_id}/mods/{filename}/toggle")
 async def toggle_mod(
     server_id: str,
     filename: str,
