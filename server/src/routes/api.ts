@@ -656,10 +656,10 @@ apiRouter.get('/v1/servers/:id/properties', authMiddleware, async (req: Request,
   }
 });
 
-// 16. Server Properties (Write)
-apiRouter.put('/v1/servers/:id/properties', authMiddleware, async (req: Request, res: Response) => {
+// 16. Server Properties (Write - Supports both POST and PUT)
+const handleSaveProperties = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { properties } = req.body;
+  const properties = req.body?.properties || req.body;
   if (!properties || typeof properties !== 'object') {
     return res.status(400).json({ success: false, error: 'Invalid properties object.' } as ApiResponse<null>);
   }
@@ -671,7 +671,10 @@ apiRouter.put('/v1/servers/:id/properties', authMiddleware, async (req: Request,
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message } as ApiResponse<null>);
   }
-});
+};
+
+apiRouter.post('/v1/servers/:id/properties', authMiddleware, handleSaveProperties);
+apiRouter.put('/v1/servers/:id/properties', authMiddleware, handleSaveProperties);
 
 // 17. Filesystem (List Files)
 apiRouter.get('/v1/servers/:id/files', authMiddleware, async (req: Request, res: Response) => {

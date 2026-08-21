@@ -1045,7 +1045,7 @@ export default function DashboardPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
-          const props = data.data.properties || {};
+          const props = (data.data && typeof data.data === 'object' && !data.data.properties) ? data.data : (data.data.properties || {});
           setServerProperties(props);
           setOriginalProperties(props);
         }
@@ -2851,7 +2851,7 @@ export default function DashboardPage() {
           {activeTab === 'properties' && (
             <div className="space-y-6 pb-16">
               {/* Header Bar */}
-              <Card className="bg-[var(--bg-surface)] border-[var(--color-border)] p-5 sm:p-6 mb-2">
+              <Card className="bg-[var(--bg-surface)] border-[var(--color-border)] p-5 sm:p-6 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="font-minecraft text-base sm:text-lg font-bold text-slate-100 tracking-wider flex items-center gap-2.5 uppercase">
                     <WardenIcon name="edit" size={20} className="text-[var(--color-accent)]" />
@@ -2860,6 +2860,29 @@ export default function DashboardPage() {
                   <p className="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
                     Visual controls for <code className="font-mono text-slate-200 bg-[var(--bg-main)] px-1.5 py-0.5 rounded border border-[var(--color-border)]">server.properties</code> Changes will update your Minecraft server configuration.
                   </p>
+                </div>
+                <div className="flex items-center gap-2.5 shrink-0">
+                  {hasUnsavedProperties && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setServerProperties(originalProperties)}
+                    >
+                      Discard
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleSaveProperties()}
+                    isLoading={savingProperties}
+                    disabled={savingProperties}
+                  >
+                    <WardenIcon name="save" size={14} className="text-[#0d0e11]" />
+                    Save Changes
+                  </Button>
                 </div>
               </Card>
 
@@ -3217,6 +3240,30 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </Card>
+
+                  {/* Form Bottom Save Action Bar */}
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    {hasUnsavedProperties && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="md"
+                        onClick={() => setServerProperties(originalProperties)}
+                      >
+                        Discard Changes
+                      </Button>
+                    )}
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      isLoading={savingProperties}
+                      disabled={savingProperties}
+                    >
+                      <WardenIcon name="save" size={16} className="text-[#0d0e11]" />
+                      Save Server Properties
+                    </Button>
+                  </div>
                 </form>
               )}
 
