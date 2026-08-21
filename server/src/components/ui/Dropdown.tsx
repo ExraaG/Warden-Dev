@@ -46,11 +46,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const isSearchEnabled = searchable !== undefined ? searchable : options.length > 8;
 
   const filteredOptions = isSearchEnabled && searchQuery.trim()
-    ? options.filter((o) =>
-        o.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (o.sublabel && o.sublabel.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        o.id.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? options.filter((o) => {
+        const l = (o.label || o.id || '').toLowerCase();
+        const sub = (o.sublabel || '').toLowerCase();
+        const id = (o.id || '').toLowerCase();
+        const q = searchQuery.toLowerCase();
+        return l.includes(q) || sub.includes(q) || id.includes(q);
+      })
     : options;
 
   useEffect(() => {
@@ -123,7 +125,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
           {icon ? (
             <WardenIcon name={icon} size={14} className="text-slate-400 shrink-0" />
           ) : null}
-          <span className="truncate">{selected ? selected.label : placeholder}</span>
+          <span className="truncate">{selected ? (selected.label || selected.id) : placeholder}</span>
         </div>
         <WardenIcon name="chevron-down" size={14} className={clsx('text-slate-400 ml-1.5 sm:ml-2 transition-transform shrink-0', isOpen && 'rotate-180')} />
       </button>
@@ -181,7 +183,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                     )}
                   >
                     <div className="truncate min-w-0">
-                      <div className="truncate font-medium">{option.label}</div>
+                      <div className="truncate font-medium">{option.label || option.id}</div>
                       {option.sublabel && (
                         <div className="text-[10px] text-slate-400 font-mono truncate">{option.sublabel}</div>
                       )}
