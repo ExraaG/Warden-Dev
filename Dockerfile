@@ -1,64 +1,59 @@
-# Multi-stage Dockerfile for Warden (Express + Next.js)
-FROM node:20-alpine AS base
-
-# Stage 1: Build shared library and server application
-FROM base AS builder
+# Stage 1: Build Next.js frontend
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
-
-# Copy scripts & version info first
 COPY scripts ./scripts
 COPY version.json ./version.json
-
-# Copy shared package and build
 COPY shared ./shared
 RUN cd shared && npm install && npm run build
 
-# Copy server package and build
 COPY server ./server
 WORKDIR /app/server
 RUN npm install
-RUN node ../scripts/stamp-version.js || true
-RUN npm run build
+RUN npm run build:next
 
-# Stage 2: Production Runner
-FROM base AS runner
-WORKDIR /app/server
+# Stage 2: Production Runner with Ubuntu 24.04 (glibc, same as Crafty 4)
+FROM ubuntu:24.04 AS runner
 
+ENV DEBIAN_FRONTEND="noninteractive"
 ENV NODE_ENV=production
 ENV PORT=22313
 ENV TZ=UTC
 ENV DATA_DIR=/data
 
-# Install utilities and headless OpenJDK runtimes (cached in separate layers for speed & clarity)
-RUN apk add --no-cache curl git psmisc eudev-libs
-RUN apk add --no-cache openjdk17-jre-headless
-RUN apk add --no-cache openjdk21-jre-headless
-RUN apk add --no-cache openjdk25-jre-headless
+# Install Python 3, OpenJDK 17, 21, 25, and system utilities
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-venv \
+    openjdk-17-jre-headless \
+    openjdk-21-jre-headless \
+    openjdk-25-jre-headless \
+    curl \
+    psmisc \
+    tzdata \
+    libcurl4 \
+    udev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Java Environment Variables for Warden
-ENV JAVA_17_PATH=/usr/lib/jvm/java-17-openjdk/bin/java
-ENV JAVA_21_PATH=/usr/lib/jvm/java-21-openjdk/bin/java
-ENV JAVA_25_PATH=/usr/lib/jvm/java-25-openjdk/bin/java
-ENV JAVA_26_PATH=/usr/lib/jvm/java-26-openjdk/bin/java
-ENV JAVA_PATH=/usr/lib/jvm/java-25-openjdk/bin/java
+ENV JAVA_17_PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin/java
+ENV JAVA_21_PATH=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+ENV JAVA_25_PATH=/usr/lib/jvm/java-25-openjdk-amd64/bin/java
+ENV JAVA_PATH=/usr/lib/jvm/java-25-openjdk-amd64/bin/java
 
-# Copy compiled shared library and server output
-COPY --from=builder /app/shared /app/shared
-COPY --from=builder /app/server/package.json ./package.json
-COPY --from=builder /app/server/version.json ./version.json
-COPY --from=builder /app/server/node_modules ./node_modules
-COPY --from=builder /app/server/dist-server ./dist-server
-COPY --from=builder /app/server/.next ./.next
-COPY --from=builder /app/server/public ./public
+WORKDIR /app
+COPY server_py/requirements.txt ./requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+
+COPY server_py/app ./app
+COPY --from=frontend-builder /app/server/out ./static
 
 # Ensure persistent data directory exists
 RUN mkdir -p /data
 
-# Expose Warden Web UI (22313) and Minecraft Server Port Range (25500-25600, Bedrock 19132, Dynmap 8123)
-EXPOSE 22313 25565/tcp 25565/udp 25500-25600/tcp 25500-25600/udp 19132/udp 8123/tcp
+EXPOSE 22313
 
-# Docker Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
-CMD ["node", "dist-server/server.js"]
+CMD ["python3", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "22313"]
