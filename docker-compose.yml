@@ -10,8 +10,8 @@ services:
       - "22313:22313"                 # Warden Web UI
       - "25565:25565"                 # Default Minecraft Java (TCP)
       - "25565:25565/udp"             # Default Minecraft Java (UDP)
-      - "25500-25600:25500-25600"     # Dynamic Minecraft server port range (TCP)
-      - "25500-25600:25500-25600/udp" # Dynamic Minecraft server port range (UDP)
+      - "25601-25700:25601-25700"     # Warden Minecraft server port range (TCP)
+      - "25601-25700:25601-25700/udp" # Warden Minecraft server port range (UDP)
     environment:
       - PORT=22313
       - TZ=${TZ:-Europe/Vienna}
