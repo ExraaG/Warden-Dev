@@ -439,13 +439,23 @@ export class ServerManager {
 
     await proc.start();
 
-    // Automatically ensure port is allowed in host firewall (UFW / iptables)
+    // Attempt to open the Minecraft port in any available OS firewall.
+    // We try all backends — whichever is present on the system will work.
+    // If none succeed it usually means the host has no OS firewall (or a
+    // cloud-provider firewall that must be opened manually in the dashboard).
     try {
       const props = await this.getServerProperties(serverId);
       const port = parseInt(props['server-port'] || '25565', 10);
       if (port > 0) {
-        exec(`ufw allow ${port}/tcp`, () => {});
-        exec(`iptables -I INPUT -p tcp --dport ${port} -j ACCEPT`, () => {});
+        // UFW (Ubuntu/Debian)
+        exec(`ufw allow ${port}/tcp 2>/dev/null`, () => {});
+        // firewalld (RHEL/Fedora/Rocky)
+        exec(`firewall-cmd --add-port=${port}/tcp --permanent 2>/dev/null && firewall-cmd --reload 2>/dev/null`, () => {});
+        // Raw iptables IPv4
+        exec(`iptables -C INPUT -p tcp --dport ${port} -j ACCEPT 2>/dev/null || iptables -I INPUT -p tcp --dport ${port} -j ACCEPT 2>/dev/null`, () => {});
+        // Raw ip6tables IPv6
+        exec(`ip6tables -C INPUT -p tcp --dport ${port} -j ACCEPT 2>/dev/null || ip6tables -I INPUT -p tcp --dport ${port} -j ACCEPT 2>/dev/null`, () => {});
+        console.log(`[Warden] Attempted to open port ${port}/tcp in all available OS firewalls.`);
       }
     } catch {}
   }
