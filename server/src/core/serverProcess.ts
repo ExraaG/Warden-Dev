@@ -167,7 +167,11 @@ export class ServerProcess extends EventEmitter {
 
       this.process.on('close', (code: number | null, signal: string | null) => {
         this.addLog(`[Warden] Process exited with code ${code}, signal: ${signal}`);
-        this.setStatus(code === 0 ? 'offline' : 'error');
+        // If we already detected a crash, keep status as 'error'.
+        // Only set 'offline' on a clean exit (code 0).
+        if (this.status !== 'error') {
+          this.setStatus(code === 0 ? 'offline' : 'error');
+        }
         this.cleanup();
         this.emit('exit', { code, signal });
       });
@@ -270,6 +274,23 @@ export class ServerProcess extends EventEmitter {
         this.setStatus('online');
         this.addLog('[Warden] Minecraft server is ready and ONLINE.');
       }
+    }
+
+    // Detect critical crash / port bind failure (Crafty-style crash supervision)
+    const isCrash =
+      line.includes('FAILED TO BIND TO PORT') ||
+      line.includes('Failed to initialize server') ||
+      line.includes('IllegalStateException') ||
+      line.includes('java.lang.OutOfMemoryError') ||
+      line.includes('Crash report saved to') ||
+      line.includes('---- Minecraft Crash Report ----') ||
+      line.includes('Exception in server tick loop') ||
+      (line.includes('[STDERR]') && line.includes('Address already in use'));
+
+    if (isCrash && this.status !== 'error') {
+      this.setStatus('error');
+      this.addLog('[Warden] Server crash or fatal error detected. Status set to ERROR.');
+      this.emit('crash', line);
     }
 
     // Detect players joining / leaving
