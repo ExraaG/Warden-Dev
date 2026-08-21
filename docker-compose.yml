@@ -6,10 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: warden
     restart: unless-stopped
-    ports:
-      - "22313:22313"                 # Warden Web UI
-      - "25601-25700:25601-25700"     # Warden Minecraft server port range (TCP)
-      - "25601-25700:25601-25700/udp" # Warden Minecraft server port range (UDP)
+    network_mode: host
     environment:
       - PORT=22313
       - TZ=${TZ:-Europe/Vienna}
