@@ -352,7 +352,7 @@ export class ServerManager {
         serverDir: dir,
         jarFile: jarName,
         javaPath,
-        minMemory: minMemory || '2G',
+        minMemory: minMemory || '1G',
         maxMemory: maxMemory || '4G',
       });
       this.processes.set(serverId, proc);
@@ -360,8 +360,17 @@ export class ServerManager {
       // Always update runtime options before starting
       proc.setJavaPath(javaPath);
       proc.setJarFile(jarName);
-      proc.setMemory(minMemory || '2G', maxMemory || '4G');
+      proc.setMemory(minMemory || '1G', maxMemory || '4G');
     }
+
+    // If port is occupied by an orphaned process from a previous run, free it
+    try {
+      const props = await this.getServerProperties(serverId);
+      const port = parseInt(props['server-port'] || '25565', 10);
+      if (port > 0) {
+        exec(`fuser -k ${port}/tcp`, () => {});
+      }
+    } catch {}
 
     await proc.start();
 
