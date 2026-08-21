@@ -30,7 +30,7 @@ ENV TZ=UTC
 ENV DATA_DIR=/data
 
 # Install utilities and headless OpenJDK runtimes (cached in separate layers for speed & clarity)
-RUN apk add --no-cache curl git psmisc
+RUN apk add --no-cache curl git psmisc eudev-libs
 RUN apk add --no-cache openjdk17-jre-headless
 RUN apk add --no-cache openjdk21-jre-headless
 RUN apk add --no-cache openjdk25-jre-headless
