@@ -41,6 +41,41 @@ export class ServerManager {
     if (!fs.existsSync(this.serversDir)) {
       fs.mkdirSync(this.serversDir, { recursive: true });
     }
+    // On startup, sweep all server directories for leftover warden.pid files
+    // and kill any orphaned Java processes from previous container runs.
+    this.sweepOrphanedProcesses();
+  }
+
+  /**
+   * Crafty-style orphan sweep: on every Warden startup, scan all server dirs
+   * for warden.pid files and kill any processes that are still alive.
+   * This prevents port conflicts after Docker container restarts.
+   */
+  private sweepOrphanedProcesses(): void {
+    try {
+      if (!fs.existsSync(this.serversDir)) return;
+      const entries = fs.readdirSync(this.serversDir);
+      for (const entry of entries) {
+        const pidFile = path.join(this.serversDir, entry, 'warden.pid');
+        if (!fs.existsSync(pidFile)) continue;
+        try {
+          const pid = parseInt(fs.readFileSync(pidFile, 'utf8').trim(), 10);
+          if (!isNaN(pid) && pid > 0) {
+            try {
+              process.kill(pid, 0); // Check if alive
+              console.log(`[Warden] Sweeping orphaned Java process PID ${pid} in ${entry}...`);
+              exec(`kill -9 ${pid}`, () => {});
+              exec(`pkill -9 -P ${pid}`, () => {});
+            } catch {
+              // Process already gone
+            }
+          }
+        } catch {}
+        try { fs.unlinkSync(pidFile); } catch {}
+      }
+    } catch (err) {
+      console.warn('[Warden] Orphan sweep failed (non-fatal):', err);
+    }
   }
 
   private isPortAvailable(port: number): Promise<boolean> {

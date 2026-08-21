@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs';
@@ -94,6 +94,50 @@ export class ServerProcess extends EventEmitter {
     return { ...this.currentStats };
   }
 
+  /** Path to the PID file stored alongside server files (Crafty-style orphan tracking) */
+  private get pidFilePath(): string {
+    return path.join(this.serverDir, 'warden.pid');
+  }
+
+  /** Kill any orphaned process whose PID was recorded in warden.pid from a previous run */
+  private killOrphanFromPidFile(): void {
+    if (!fs.existsSync(this.pidFilePath)) return;
+    try {
+      const pid = parseInt(fs.readFileSync(this.pidFilePath, 'utf8').trim(), 10);
+      if (!isNaN(pid) && pid > 0) {
+        try {
+          // Check if process is still alive
+          process.kill(pid, 0);
+          // If we reach here, process exists — kill it
+          this.addLog(`[Warden] Killing orphaned Java process from previous session (PID ${pid})...`);
+          try { execSync(`kill -9 ${pid}`); } catch {}
+          // Also kill any child processes
+          try { execSync(`pkill -9 -P ${pid}`); } catch {}
+        } catch {
+          // ESRCH — process no longer exists, nothing to kill
+        }
+      }
+    } catch {
+      // Corrupt PID file, ignore
+    } finally {
+      try { fs.unlinkSync(this.pidFilePath); } catch {}
+    }
+  }
+
+  /** Write the current Java process PID to disk for orphan recovery */
+  private writePidFile(pid: number): void {
+    try {
+      fs.writeFileSync(this.pidFilePath, String(pid), 'utf8');
+    } catch {}
+  }
+
+  /** Remove the PID file on clean shutdown or crash */
+  private removePidFile(): void {
+    try {
+      if (fs.existsSync(this.pidFilePath)) fs.unlinkSync(this.pidFilePath);
+    } catch {}
+  }
+
   public start(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.process && !this.process.killed) {
@@ -115,6 +159,9 @@ export class ServerProcess extends EventEmitter {
         this.addLog('[Warden] EULA not yet accepted. Please accept the Minecraft EULA to start the server.');
         return reject(new Error('EULA_NOT_ACCEPTED'));
       }
+
+      // Kill any orphaned Java process from a previous Warden run (Crafty-style PID file tracking)
+      this.killOrphanFromPidFile();
 
       const args = [
         `-Xms${this.minMemory}`,
@@ -138,6 +185,12 @@ export class ServerProcess extends EventEmitter {
         this.setStatus('error');
         this.addLog(`[Warden] Failed to spawn process: ${err.message}`);
         return reject(err);
+      }
+
+      // Record PID immediately after spawn for orphan recovery across container restarts
+      if (this.process.pid) {
+        this.writePidFile(this.process.pid);
+        this.addLog(`[Warden] PID ${this.process.pid} written to warden.pid for orphan tracking.`);
       }
 
       this.startTime = Date.now();
@@ -172,6 +225,7 @@ export class ServerProcess extends EventEmitter {
         if (this.status !== 'error') {
           this.setStatus(code === 0 ? 'offline' : 'error');
         }
+        this.removePidFile();
         this.cleanup();
         this.emit('exit', { code, signal });
       });
@@ -244,6 +298,7 @@ export class ServerProcess extends EventEmitter {
     if (this.process && !this.process.killed) {
       this.addLog('[Warden] Force killing server process...');
       this.process.kill('SIGKILL');
+      this.removePidFile();
       this.cleanup();
       this.setStatus('offline');
     }
