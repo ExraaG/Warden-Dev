@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import net from 'net';
 import { exec } from 'child_process';
 import AdmZip from 'adm-zip';
 import { ServerProcess } from './serverProcess.js';
@@ -40,6 +41,23 @@ export class ServerManager {
     if (!fs.existsSync(this.serversDir)) {
       fs.mkdirSync(this.serversDir, { recursive: true });
     }
+  }
+
+  private isPortAvailable(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const tester = net.createServer()
+        .once('error', (err: any) => {
+          if (err.code === 'EADDRINUSE' || err.code === 'EACCES') {
+            resolve(false);
+          } else {
+            resolve(false);
+          }
+        })
+        .once('listening', () => {
+          tester.close(() => resolve(true));
+        })
+        .listen(port, '0.0.0.0');
+    });
   }
 
   /**
@@ -363,14 +381,26 @@ export class ServerManager {
       proc.setMemory(minMemory || '1G', maxMemory || '4G');
     }
 
-    // If port is occupied by an orphaned process from a previous run, free it
+    // Pre-flight Port Availability Check (inspired by Crafty Controller)
     try {
       const props = await this.getServerProperties(serverId);
       const port = parseInt(props['server-port'] || '25565', 10);
       if (port > 0) {
-        exec(`fuser -k ${port}/tcp`, () => {});
+        const available = await this.isPortAvailable(port);
+        if (!available) {
+          exec(`fuser -k ${port}/tcp`, () => {});
+          await new Promise((r) => setTimeout(r, 600));
+          const stillOccupied = !(await this.isPortAvailable(port));
+          if (stillOccupied) {
+            throw new Error(`Port ${port} is currently in use by another process on your server. Please stop that process or change server-port in server.properties.`);
+          }
+        }
       }
-    } catch {}
+    } catch (portErr: any) {
+      if (portErr.message.includes('currently in use')) {
+        throw portErr;
+      }
+    }
 
     await proc.start();
 

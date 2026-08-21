@@ -142,4 +142,6 @@ docker compose up -d --build
 
 ## Disclaimer & Attribution
 
-Portions of this codebase and architecture were built and accelerated with the assistance of AI development tools. All code has been structured, reviewed, and tested for performance, reliability, and security.
+- Portions of this codebase and architecture were built and accelerated with the assistance of AI development tools. All code has been structured, reviewed, and tested for performance, reliability, and security.
+- Special credit and acknowledgement to **[Crafty Controller](https://gitlab.com/crafty-controller/crafty-4)** (GPLv3) for pioneering open-source Minecraft server orchestration architectures and pre-flight validation concepts.
+
