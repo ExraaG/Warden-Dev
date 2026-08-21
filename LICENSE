@@ -676,7 +676,12 @@ Public License instead of this License.  But first, please read
 ASSET & BRANDING NOTICE:
 The "Warden" project icon and visual branding are unofficial fan art 
 inspired by Minecraft (Mojang AB / Microsoft) and are excluded from the 
-MIT License. 
+GPLv3 License. 
 
 NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED 
 WITH MOJANG OR MICROSOFT.
+
+ACKNOWLEDGEMENTS & THIRD-PARTY NOTICES:
+Portions of server orchestration and validation concepts are inspired by 
+Crafty Controller (https://gitlab.com/crafty-controller/crafty-4), licensed under GPLv3.
+

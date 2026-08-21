@@ -140,8 +140,6 @@ docker compose up -d --build
 - **View Step Execution & Rollback History**: Navigate to the **Audit Logs** tab to view step-by-step execution logs (`modrinth_hash_batch`, `download_verify`, `backup`, `stop_server`, `swap_files`, `verify_directory`, `start_server`, `rollback_action`).
 
 
-## Disclaimer & Attribution
-
-- Portions of this codebase and architecture were built and accelerated with the assistance of AI development tools. All code has been structured, reviewed, and tested for performance, reliability, and security.
-- Special credit and acknowledgement to **[Crafty Controller](https://gitlab.com/crafty-controller/crafty-4)** (GPLv3) for pioneering open-source Minecraft server orchestration architectures and pre-flight validation concepts.
+## License & Credits
+Warden is free and open-source software licensed under the **GNU General Public License v3.0 (GPLv3)**. See [LICENSE](LICENSE) for full licensing details and third-party acknowledgements.
 
