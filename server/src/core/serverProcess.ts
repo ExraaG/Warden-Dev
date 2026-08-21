@@ -50,6 +50,10 @@ export class ServerProcess extends EventEmitter {
     this.minMemory = opts.minMemory || '1G';
     this.maxMemory = opts.maxMemory || '4G';
     this.jvmArgs = opts.jvmArgs || [
+      '-Dfile.encoding=UTF-8',
+      '-Dterminal.jline=false',
+      '-Dterminal.ansi=true',
+      '--enable-native-access=ALL-UNNAMED',
       '-XX:+UseG1GC',
       '-XX:MaxGCPauseMillis=200',
       '-XX:+UnlockExperimentalVMOptions',
