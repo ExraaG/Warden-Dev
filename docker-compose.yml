@@ -6,10 +6,14 @@ services:
       dockerfile: Dockerfile
     container_name: warden
     restart: unless-stopped
-    network_mode: host
-    cap_add:
-      - NET_ADMIN      # Required: allows iptables/ufw to open Minecraft ports from inside Docker
-      - SYS_PTRACE     # Required: allows reading /proc/<pid> for PID file orphan tracking
+    ports:
+      - "22313:22313"                 # Warden Web UI
+      - "25565:25565"                 # Default Minecraft Java (TCP)
+      - "25565:25565/udp"             # Default Minecraft Java (UDP)
+      - "25500-25600:25500-25600"     # Dynamic Minecraft server port range (TCP)
+      - "25500-25600:25500-25600/udp" # Dynamic Minecraft server port range (UDP)
+      - "19132:19132/udp"             # Bedrock Edition (UDP)
+      - "8123:8123"                   # Dynmap / BlueMap (TCP)
     environment:
       - PORT=22313
       - TZ=${TZ:-Europe/Vienna}

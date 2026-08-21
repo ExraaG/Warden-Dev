@@ -54,8 +54,8 @@ COPY --from=builder /app/server/public ./public
 # Ensure persistent data directory exists
 RUN mkdir -p /data
 
-# Expose Warden Web UI (22313) and Minecraft Game Port (25565)
-EXPOSE 22313 25565
+# Expose Warden Web UI (22313) and Minecraft Server Port Range (25500-25600, Bedrock 19132, Dynmap 8123)
+EXPOSE 22313 25565/tcp 25565/udp 25500-25600/tcp 25500-25600/udp 19132/udp 8123/tcp
 
 # Docker Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
