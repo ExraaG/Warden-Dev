@@ -211,7 +211,7 @@ export class ServerProcess extends EventEmitter {
         const lines = data.toString('utf8').split(/\r?\n/);
         for (const line of lines) {
           if (!line.trim()) continue;
-          this.handleLogLine(line);
+          this.handleLogLine(`[STDERR] ${line}`);
         }
       });
 
