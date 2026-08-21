@@ -50,6 +50,8 @@ export class ServerProcess extends EventEmitter {
     this.minMemory = opts.minMemory || '1G';
     this.maxMemory = opts.maxMemory || '4G';
     this.jvmArgs = opts.jvmArgs || [
+      '-Djava.net.preferIPv4Stack=true',
+      '-Djava.net.preferIPv4Addresses=true',
       '-Dfile.encoding=UTF-8',
       '-Dterminal.jline=false',
       '-Dterminal.ansi=true',
