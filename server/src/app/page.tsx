@@ -2025,7 +2025,7 @@ export default function DashboardPage() {
               <Badge status={server.status} />
               <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
                 <span className="bg-[var(--bg-card)] text-slate-400 px-2 py-0.5 rounded border border-[var(--color-border)] font-mono text-[10px]">
-                  ID:{server.craftyServerId.substring(0, 8)}
+                  ID:{(server.craftyServerId || server.id || '').substring(0, 8)}
                 </span>
                 {server.detection?.loader !== 'unknown' && (
                   <span className="bg-[var(--accent-dim)] text-[var(--color-accent)] px-2 py-0.5 rounded border border-[var(--accent-border)] font-minecraft text-[10px] font-bold uppercase">

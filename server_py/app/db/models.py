@@ -59,6 +59,7 @@ class ServerModel(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "craftyServerId": self.id,
             "name": self.name,
             "ownerId": self.owner_id,
             "loader": self.loader,
