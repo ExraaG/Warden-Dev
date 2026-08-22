@@ -49,7 +49,7 @@ export default function DashboardPage() {
     autoStart: false,
   });
 
-  // Import / Export Server State (.zip & Crafty Backups)
+  // Import / Export Server State (.zip backups)
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importName, setImportName] = useState<string>('');
   const [importMinMemory, setImportMinMemory] = useState<string>('2G');
@@ -714,8 +714,7 @@ export default function DashboardPage() {
   }, []);
 
   // Settings State
-  const [craftyUrl, setCraftyUrl] = useState<string>('');
-  const [craftyApiKey, setCraftyApiKey] = useState<string>('');
+
   const [timezone, setTimezone] = useState<string>('Europe/Vienna');
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState<boolean>(true);
   const [autoUpdateTime, setAutoUpdateTime] = useState<string>('04:00');
@@ -973,7 +972,7 @@ export default function DashboardPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
-          setCraftyUrl(data.data.craftyUrl || '');
+
           setTimezone(data.data.timezone || 'Europe/Vienna');
           setAutoUpdateEnabled(data.data.autoUpdateEnabled !== false);
           setAutoUpdateTime(data.data.autoUpdateTime || '04:00');
@@ -1331,7 +1330,7 @@ export default function DashboardPage() {
         setModSearchQuery('');
         setVersionPickerMod(null);
         fetchInstalledMods();
-        // Trigger a secondary refresh after 1.5s to ensure Crafty file index sync is captured
+        // Trigger a secondary refresh after 1.5s to ensure file index sync is captured
         setTimeout(() => fetchInstalledMods(), 1500);
         showToast(`Installed ${mod.title || mod.slug} successfully!`, 'success');
       } else {
@@ -1626,8 +1625,6 @@ export default function DashboardPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        craftyUrl,
-        craftyApiKey: craftyApiKey || undefined,
         timezone,
         autoUpdateEnabled,
         autoUpdateTime,
@@ -1637,7 +1634,6 @@ export default function DashboardPage() {
       .then((data) => {
         if (data.success) {
           setSettingsSaved(true);
-          setCraftyApiKey('');
           showToast('Server settings saved successfully!', 'success');
           setTimeout(() => setSettingsSaved(false), 3000);
         } else {
@@ -1969,36 +1965,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* Detection Confirmation Banner */}
-          {!isConfirmed && (
-            <div className="bg-[var(--accent-dim)] border border-[var(--accent-border)] rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-start sm:items-center gap-2.5">
-                <WardenIcon name="server" size={16} className="text-[var(--color-accent)] shrink-0 mt-0.5 sm:mt-0" />
-                <div>
-                  <span className="font-bold text-slate-100 font-minecraft uppercase">
-                    Detected: {currentLoaderName} • MC {currentVersionNum}
-                  </span>
-                  <div className="text-slate-400 text-[11px] mt-0.5">
-                    Confirm your loader and version so Warden installs correct mod updates from Modrinth.
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => handleConfirmLoader(server.detection?.loader || 'fabric', server.detection?.mcVersion || '1.21.1')}
-                >
-                  <WardenIcon name="check" size={14} className="text-[#0d0e11]" />
-                  Confirm ({currentLoaderName} {currentVersionNum})
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowConfirmModal(true)}>
-                  <WardenIcon name="edit" size={14} className="text-slate-300" />
-                  Change
-                </Button>
-              </div>
-            </div>
-          )}
+
 
 
 
@@ -2025,7 +1992,7 @@ export default function DashboardPage() {
               <Badge status={server.status} />
               <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
                 <span className="bg-[var(--bg-card)] text-slate-400 px-2 py-0.5 rounded border border-[var(--color-border)] font-mono text-[10px]">
-                  ID:{(server.craftyServerId || server.id || '').substring(0, 8)}
+                  ID:{(server.id || '').substring(0, 8)}
                 </span>
                 {server.detection?.loader !== 'unknown' && (
                   <span className="bg-[var(--accent-dim)] text-[var(--color-accent)] px-2 py-0.5 rounded border border-[var(--accent-border)] font-minecraft text-[10px] font-bold uppercase">
@@ -5296,7 +5263,7 @@ export default function DashboardPage() {
                     </p>
                     <p className="text-[10px] leading-relaxed text-amber-300 font-mono">
                       {currentLoader === 'vanilla' || currentLoader === 'unknown'
-                        ? 'Vanilla servers do not have a mods/ folder. Switch your server jar to Fabric/Forge in Crafty and start it once to initialize the mods directory.'
+                        ? 'Vanilla servers do not have a mods/ folder. Switch your server loader to Fabric or Forge in the loader settings and start the server once to initialize the mods directory.'
                         : `Warden will deploy files, but Minecraft will only run them once you switch the server jar to ${modpackLoader.toUpperCase()}.`}
                     </p>
                   </div>
@@ -6027,7 +5994,7 @@ export default function DashboardPage() {
                         Click to browse or drag &amp; drop <code className="text-[var(--color-accent)]">.zip</code> archive
                       </div>
                       <div className="text-[10px] font-mono text-slate-500">
-                        Crafty Controller backups, Warden exports, or custom Minecraft zip files
+                        Warden exports or custom Minecraft zip files
                       </div>
                     </div>
                   )}
@@ -6042,7 +6009,7 @@ export default function DashboardPage() {
                   type="text"
                   value={importName}
                   onChange={(e) => setImportName(e.target.value)}
-                  placeholder="e.g. Imported Crafty Server"
+                  placeholder="e.g. Imported Server"
                   className="w-full h-8 bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--color-border)] px-3 rounded-md text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/50 font-mono transition-colors"
                 />
               </div>
