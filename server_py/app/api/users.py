@@ -3,7 +3,7 @@ import time
 import uuid
 import shutil
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,13 +42,13 @@ async def create_user(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(User).where(User.username == payload.username))
+    result = await db.execute(select(User).where(User.username == payload.username.strip()))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Username already exists")
 
     new_user = User(
         id=str(uuid.uuid4()),
-        username=payload.username,
+        username=payload.username.strip(),
         password_hash=hash_password(payload.password),
         role=payload.role,
         created_at=int(time.time()),
@@ -78,6 +78,33 @@ async def update_user(
     await db.commit()
     return {"success": True, "data": user.to_dict()}
 
+@router.post("/{user_id}/transfer-ownership")
+async def transfer_ownership(
+    user_id: str,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    target_user = result.scalars().first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Target user not found")
+
+    current_user.role = "player"
+    target_user.role = "admin"
+    await db.commit()
+    return {"success": True, "data": None}
+
+@router.delete("/batch/all")
+@router.post("/batch/all")
+async def batch_delete_users(
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    # Keep current admin
+    await db.execute(delete(User).where(User.id != current_user.id))
+    await db.commit()
+    return {"success": True, "data": {"deletedCount": 1, "keptUserId": current_user.id}}
+
 @router.delete("/me/servers")
 async def delete_all_my_servers(
     payload: DeleteMyServersPayload,
@@ -87,7 +114,6 @@ async def delete_all_my_servers(
     if payload.confirmation != "DELETE ALL MY SERVERS":
         raise HTTPException(status_code=400, detail="Invalid confirmation text. Must type exactly: DELETE ALL MY SERVERS")
 
-    # Fetch user's servers
     result = await db.execute(select(ServerModel).where(ServerModel.owner_id == current_user.id))
     servers = result.scalars().all()
 

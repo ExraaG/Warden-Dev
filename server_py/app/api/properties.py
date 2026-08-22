@@ -20,6 +20,7 @@ async def get_properties(
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("")
+@router.put("")
 async def save_properties(
     server_id: str,
     properties: Dict[str, Any],

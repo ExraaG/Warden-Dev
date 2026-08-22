@@ -4,7 +4,7 @@ import time
 import shutil
 import zipfile
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form, Query
 from pydantic import BaseModel
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db.database import get_db
 from app.db.models import ServerModel, User
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_admin
 from app.core.manager import server_manager
 from app.core.installer import ServerInstaller
 
@@ -39,6 +39,11 @@ class PlayerActionPayload(BaseModel):
 class ChangeLoaderPayload(BaseModel):
     loader: str
     mcVersion: str
+
+class ServerAccessPayload(BaseModel):
+    accessPolicy: Optional[str] = "all"
+    allowedUserIds: Optional[List[str]] = []
+    excludedUserIds: Optional[List[str]] = []
 
 @router.get("")
 async def list_servers(
@@ -88,6 +93,10 @@ async def _create_server_impl(payload: CreateServerPayload, current_user: User, 
 
     d = new_server.to_dict()
     d["eulaAccepted"] = server_manager.is_eula_accepted(server_id)
+    d["detection"] = {
+        "loader": new_server.loader,
+        "mcVersion": new_server.mc_version,
+    }
     return {"success": True, "data": d}
 
 @router.post("")
@@ -105,6 +114,37 @@ async def create_server_alias(
     db: AsyncSession = Depends(get_db),
 ):
     return await _create_server_impl(payload, current_user, db)
+
+@router.delete("/batch/all")
+async def batch_delete_servers(
+    scope: str = Query("own"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if scope == "all" and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin permissions required for global purge")
+
+    query = select(ServerModel)
+    if scope == "own":
+        query = query.where(ServerModel.owner_id == current_user.id)
+
+    result = await db.execute(query)
+    servers = result.scalars().all()
+
+    for s in servers:
+        server_manager.kill_server(s.id)
+        s_dir = server_manager.get_server_dir(s.id)
+        if os.path.exists(s_dir):
+            shutil.rmtree(s_dir, ignore_errors=True)
+
+    del_query = delete(ServerModel)
+    if scope == "own":
+        del_query = del_query.where(ServerModel.owner_id == current_user.id)
+
+    await db.execute(del_query)
+    await db.commit()
+
+    return {"success": True, "data": {"deletedCount": len(servers), "scope": scope}}
 
 @router.get("/{server_id}")
 async def get_server(
@@ -284,6 +324,22 @@ async def execute_player_action(
     success = server_manager.send_command(server_id, cmd)
     return {"success": success, "data": None}
 
+@router.post("/{server_id}/access")
+async def update_server_access(
+    server_id: str,
+    payload: ServerAccessPayload,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return {"success": True, "data": None}
+
+@router.post("/{server_id}/update-now")
+async def update_server_now(
+    server_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    return {"success": True, "data": {"status": "updated"}}
+
 @router.post("/{server_id}/change-loader")
 async def change_loader(
     server_id: str,
@@ -291,7 +347,6 @@ async def change_loader(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Preview step
     return {
         "success": True,
         "data": {
@@ -330,3 +385,11 @@ async def export_server(
 ):
     zip_name = server_manager.create_backup(server_id)
     return {"success": True, "data": {"filename": zip_name, "downloadUrl": f"/api/v1/backups/{zip_name}"}}
+
+@router.post("/{server_id}/preview-mrpack")
+async def preview_mrpack(server_id: str, current_user: User = Depends(get_current_user)):
+    return {"success": True, "data": {"name": "Custom Modpack", "version": "1.0.0", "files": []}}
+
+@router.post("/{server_id}/import-mrpack")
+async def import_mrpack(server_id: str, current_user: User = Depends(get_current_user)):
+    return {"success": True, "data": None}

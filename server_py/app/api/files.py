@@ -55,6 +55,7 @@ async def get_file_content(
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/content")
+@router.put("/content")
 async def save_file_content(
     server_id: str,
     payload: WriteFilePayload,
