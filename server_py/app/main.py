@@ -65,7 +65,10 @@ app.add_middleware(
 api_prefix = "/api"
 app.include_router(auth_router, prefix=api_prefix)
 app.include_router(servers_router, prefix=api_prefix)
+# Console REST endpoints go under /api, but WebSocket lives at /ws/... (no prefix)
 app.include_router(console_router, prefix=api_prefix)
+# Register WebSocket route at root level: /ws/servers/{server_id}/console
+app.include_router(console_router)
 app.include_router(files_router, prefix=api_prefix)
 app.include_router(properties_router, prefix=api_prefix)
 app.include_router(mods_router, prefix=api_prefix)

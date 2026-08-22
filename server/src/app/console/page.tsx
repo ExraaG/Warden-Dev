@@ -82,7 +82,7 @@ export default function ConsolePage() {
             <span>Minecraft Console</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time console stdout stream and command execution via Crafty Controller.
+            Real-time console stdout stream and command execution.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchConsoleLogs} isLoading={loading} className="shrink-0 self-start sm:self-auto">

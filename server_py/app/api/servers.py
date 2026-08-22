@@ -162,9 +162,20 @@ async def get_server(
     d["status"] = proc.status if proc else server.status
     d["eulaAccepted"] = server_manager.is_eula_accepted(server.id)
     d["detection"] = {
-        "loader": server.loader,
-        "mcVersion": server.mc_version,
+        "loader": server.loader or "unknown",
+        "mcVersion": server.mc_version or "1.21.4",
+        "isConfirmed": True,  # In Warden, loader is always authoritative (no detection step)
     }
+    # Stats from running process
+    if proc:
+        pstats = proc.get_stats()
+        d["stats"] = pstats
+    else:
+        d["stats"] = {"cpuPercent": 0, "memoryBytes": 0, "onlinePlayers": 0, "uptimeSeconds": 0}
+    # Access control fields
+    d.setdefault("accessPolicy", "all")
+    d.setdefault("allowedUserIds", [])
+    d.setdefault("excludedUserIds", [])
     return {"success": True, "data": d}
 
 @router.post("/{server_id}/action")
