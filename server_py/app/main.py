@@ -34,7 +34,24 @@ async def lifespan(app: FastAPI):
         if proc.status == "online":
             proc.stop(timeout=5)
 
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exceptions import RequestValidationError
+
 app = FastAPI(title="Warden Backend", version="1.0.0", lifespan=lifespan)
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"success": False, "error": str(exc.detail), "detail": str(exc.detail)},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"success": False, "error": str(exc), "detail": str(exc)},
+    )
 
 app.add_middleware(
     CORSMiddleware,
